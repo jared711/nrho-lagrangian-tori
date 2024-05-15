@@ -30,7 +30,7 @@ Description of the routine:
        void map(complex *z, complex *fz, complex **Dfz, complex *depfz)
 
     2) Evaluation of the metric
-       void sform_standard(complex *z, complex **Omegaz)
+       void gform_standard(complex *z, complex **Omegaz)
 
     3) Evaluation of the symplectic form
 
@@ -444,7 +444,7 @@ void realloc_torus(matrix &paramR, matrix &paramF,
 }
 
 int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int *nn, int nelem,
-              int &tail0, int *tails, int Case,
+              int &tail0, int *tails, int Case, 
               void (*map)(complex *, complex *, complex **, complex *),
               void (*sform)(complex *, complex **),
               void (*gform)(complex *, complex **),
