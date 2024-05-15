@@ -1,3 +1,5 @@
 *~
 .vscode
 240506*
+*.o
+param
