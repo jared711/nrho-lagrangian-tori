@@ -1,0 +1,19 @@
+1.0e-13 #toltail - maximum size of the tail (sum of the 1-norms of the fourier coefficients)
+1.0e-12 #tolinva - tolerance for invariance. Compute the error and take its norm. If that is smaller thatn tolinva, we have successfully completed the computation
+1.0e-17 #tolinte - tolerance for the intermediate computation (matrix inverses)
+0.414213562373095049 #omega[1]
+0.732050807568877294 #omega[2]
+0.0 #epsilon
+3.0 #lambda[0]
+2 #nn[0]
+2 #nn[1]
+5e-5 #deps
+1 #auxint
+1 1 # indices of auxiliary inputs
+-0.9975334497794613 0 -0.00489434320310318 1.383426648384139E-16 -1.002834494433839 -1.991818118201947E-16
+1 2
+11 12 13 14 15 16
+2 1 
+21 22 23 24 25 26
+2 2
+31 32 33 34 35 36

@@ -1,0 +1,9 @@
+1.0e-12 toltail - maximum size of the tail (sum of the 1-norms of the fourier coefficients)
+1.0e-10 tolinva - tolerance for invariance. Compute the error and take its norm. If that is smaller thatn tolinva, we have successfully completed the computation
+1.0e-16 tolinte - tolerance for the intermediate computation (matrix inverses)
+0.618033988749894848 omega
+0.0 epsilon
+32 nn
+1e-2 deps
+0 auxint I can use this to add extra inputs like the initial conditions of the torus
+
