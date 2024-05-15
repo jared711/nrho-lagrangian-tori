@@ -1,0 +1,1 @@
+This code is for computing Lagrangian tori in the CR3BP. The Near-Rectilinear Halo Orbits (NRHOs) around Enceladus are a potential mission design solution, and this code seeks to compute QPOs around the NRHOs. It relies on code developed by Alex Haro and Josep-Maria Mondelo
