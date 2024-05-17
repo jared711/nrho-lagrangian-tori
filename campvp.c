@@ -4,6 +4,10 @@
  * \brief Convenis de camp vectorial amb variacionals 1eres respecte
  * de paràmetres (no es pot estendre a ordre superior) i 1eres,2ones 
  * respecte de c.i. (es pot estendre a ordre superior).
+ * 
+ * \brief Vector field conventions with 1st variations with respect to
+ * parameters (cannot be extended to higher order) and 1st,2nd with
+ * respect to initial conditions (can be extended to higher order).
  */
 
 double *vrp(int n, double *x, int i, int j) {
