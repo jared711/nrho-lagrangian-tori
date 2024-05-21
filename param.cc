@@ -6,6 +6,7 @@ Alejandro Luque    http://www.maia.ub.es/~luque/
 
 Last version October 21, 2014
 ------------------------------------------------
+Edited by Jared Blanchard (jaredb711@gmail.com) May 2024
 
 Description of the routine:
 ------------------------------------------------
@@ -52,7 +53,8 @@ Description of the routine:
 #include "grid.h"
 #include "matrix.h"
 
-extern "C" {
+extern "C"
+{
 #include "campvp.h"
 #include "rtbphp.h"
 #include "fluxvp.h"
@@ -81,7 +83,7 @@ using namespace std;
 // CR3BP map
 #define DTOR (2)    // Dimension of the invariant torus because I'm doing the generator of the full lagrangian torus
 #define DMAP (4)    // Dimension of phase space (5/8/24, we've reduced the dimnsion to 4 because we're constraining C and y=0 with a Poincare map)
-#define NPAR (1)    // Number of (constant) parameters in the map
+#define NPAR (2)    // Number of (constant) parameters in the map
 #define MNEW (10)   // Maximum number of Newton iterations
 #define MAXF (8192) // Maximum number of Fourier coefficients allowed
 
@@ -111,7 +113,7 @@ void sform_CR3BP(complex *z, complex **Omegaz);
 void gform_CR3BP(complex *z, complex **Metricz);
 void normal0_CR3BP(matrix &N0, int *nn, int nelem);
 void wrtf(int n, int nv, double t, double x[], int aon, void *prm);
-double get_pz(double x, double y, double z, double px, double py, double mu);
+double get_p3(double q1, double q2, double q3, double p1, double p2, double mu);
 void state2ham(double state[]);
 
 /* General global variables */
@@ -165,7 +167,7 @@ int main(int argc, char *argv[])
     cout.precision(15);
 
     /**** START We read an invariant torus from the file ****/
-    file_input.open(argv[1],ios::in);
+    file_input.open(argv[1], ios::in);
     file_input << scientific;
     file_input >> toltail; // tolerance of the tail from eq. 4.104
     cout << "#toltail: " << toltail << endl;
@@ -175,7 +177,7 @@ int main(int argc, char *argv[])
     cout << "#tolinte: " << tolinte << endl;
     start_matrix(tolinte);
     start_grid(tolinte);
-    for(int i=0;i<DTOR;i++)
+    for (int i = 0; i < DTOR; i++)
     {
         file_input >> omega[i];
         cout << "#omega[" << i << "]: " << omega[i] << endl;
@@ -183,11 +185,13 @@ int main(int argc, char *argv[])
     int auxint;
     file_input >> epsilon;
     cout << "#epsilon: " << epsilon << endl;
-    for(int j=0;j<NPAR;j++){
+    for (int j = 0; j < NPAR; j++)
+    {
         file_input >> lambda[j];
         cout << "#lambda[" << j << "]: " << lambda[j] << endl;
     }
-    for(int j=0;j<DTOR;j++){
+    for (int j = 0; j < DTOR; j++)
+    {
         file_input >> nn[j]; // dimesions of the torus that you're trying to compute
         cout << "#nn[" << j << "]: " << nn[j] << endl;
     }
@@ -195,30 +199,39 @@ int main(int argc, char *argv[])
     cout << "#deps: " << deps << endl;
     file_input >> auxint;
     cout << "#auxint: " << auxint << endl;
-    paramR=matrix(DMAP,1,DTOR,nn); // Memory for the torus
-    nelem=1; // initialized as one, but becomes the number of elements in the grid
-    for(int i=0;i<DTOR;i++) nelem *= nn[i]; // Number of elements in the grid is the product of the components of nn
-    if(auxint!=0){ // if auxint is not 0, then we read the torus from the file
-        for (int l=0;l<nelem;l++){
+    paramR = matrix(DMAP, 1, DTOR, nn); // Memory for the torus
+    nelem = 1;                          // initialized as one, but becomes the number of elements in the grid
+    for (int i = 0; i < DTOR; i++)
+        nelem *= nn[i]; // Number of elements in the grid is the product of the components of nn
+    if (auxint != 0)
+    { // if auxint is not 0, then we read the torus from the file
+        for (int l = 0; l < nelem; l++)
+        {
             // this line seems worthless, maybe I'm supposed to use it to keep the rows of the torus separate
             // since it does this for the first DTOR elements, I need to put DTOR (2) elements in before each state
             // It might be better to just rewrite this to import a csv file
-            for(int j=0;j<DTOR;j++){
+            for (int j = 0; j < DTOR; j++)
+            {
                 file_input >> auxint; // assign the next line into auxint (which is an integer)
                 cout << "auxint: " << auxint << endl;
             }
-            for (int j=0;j<DMAP;j++){
+            for (int j = 0; j < DMAP; j++)
+            {
                 paramR.coef[j][0].elem[l] = val0;
                 file_input >> paramR.coef[j][0].elem[l].real;
                 cout << "paramR.coef[" << j << "][0].elem[" << l << "]: " << paramR.coef[j][0].elem[l].real << endl;
             }
         }
     }
-    else {
-        for (int l=0;l<nelem;l++){
-            indices(l,nn,index,DTOR);
-            for (int j=0; j<DTOR;j++) paramR.coef[j][0].elem[l] = val0;
-            for (int j=0; j<DTOR;j++) paramR.coef[j+DTOR][0].elem[l] = omega[j];
+    else
+    {
+        for (int l = 0; l < nelem; l++)
+        {
+            indices(l, nn, index, DTOR);
+            for (int j = 0; j < DTOR; j++)
+                paramR.coef[j][0].elem[l] = val0;
+            for (int j = 0; j < DTOR; j++)
+                paramR.coef[j + DTOR][0].elem[l] = omega[j];
         }
     }
     file_input.close();
@@ -253,14 +266,16 @@ int main(int argc, char *argv[])
     double cp[7] = {0, 0, 1, 0, 0, 0, 0};
     double t = 0;
     double h = fluxvp_pas0;
-    if (ibck) h = -h;
+    if (ibck)
+        h = -h;
     FILE *fp = NULL;
     int indict = 0;
     indict = seccp(6, 6 /*nv*/, 0 /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t, x, &h, cp,
-                      nsec, isiggrad, tolJM, ivb, 0 /*idt*/, NULL /*dt*/, wrtf, fp, maxts);
-    cout << "indict: " << indict << endl;    
+                   nsec, isiggrad, tolJM, ivb, 0 /*idt*/, NULL /*dt*/, wrtf, fp, maxts);
+    cout << "indict: " << indict << endl;
     // state2ham(x);
 
+    return 0;
 
     // cout << "hey"   << endl;
     // flowvp(1/*N*/,6/*n number of states?*/,0/*number of parameters?*/,&mu/*parameter*/,rtbphp/*vfld*/,
@@ -444,7 +459,7 @@ void realloc_torus(matrix &paramR, matrix &paramF,
 }
 
 int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int *nn, int nelem,
-              int &tail0, int *tails, int Case, 
+              int &tail0, int *tails, int Case, /**/
               void (*map)(complex *, complex *, complex **, complex *),
               void (*sform)(complex *, complex **),
               void (*gform)(complex *, complex **),
@@ -647,14 +662,14 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     DparamR = fft_B(DparamF);
 
     LR = DparamR;
-    for (int i = 0; i < DTOR; i++)
-        LR.coef[i][i] = LR.coef[i][i] + val1; /*Alex 5/3 get rid of the val1*/
+    // for (int i = 0; i < DTOR; i++)
+    // LR.coef[i][i] = LR.coef[i][i] + val1; /*Alex 5/3 get rid of the val1*/
 
     if (Case == 1)
     { /*Cases in Book*/
         matrix N0R(DMAP, DTOR, DTOR, nn);
 
-        (*normal0)(N0R, nn, nelem);
+        (*normal0)(N0R, nn, nelem); // This is the only place where the normal form gets used
         GR = -trans(LR) * OmegaKR * N0R;
         BR = inv(GR);
         AR = -trans(BR) * trans(N0R) * OmegaKR * N0R * BR * val05;
@@ -882,7 +897,8 @@ void normal0_froeschle(matrix &N0, int *nn, int nelem)
     }
 }
 
-double get_pz(double x, double y, double z, double px, double py, double mu){
+double get_pz(double q1, double q2, double q3, double p1, double p2, double mu, double H)
+{
     // The Hamiltonian is defined in rtbphp.c as shown below
     // double rtbphp_h (int n, int np, void *prm, double x[]) {
     //    double mu=*((double *)prm), xmmu=X-mu, xmmup1=xmmu+1,
@@ -892,33 +908,67 @@ double get_pz(double x, double y, double z, double px, double py, double mu){
     // 	  p1=(1-mu)/r1, p2=mu/r2;
     //    return .5*(SQR(PX)+SQR(PY)+SQR(PZ))+Y*PX-X*PY-p1-p2;
     // }
-    
-    // The Hamiltonian should be contained in lambda[0]
-    double xmmu=x-mu, xmmup1=xmmu+1,
-	  r12=SQR(xmmu)+SQR(y)+SQR(z),
-	  r22=SQR(xmmup1)+SQR(y)+SQR(z),
-	  r1=sqrt(r12), r2=sqrt(r22),
-	  p1=(1-mu)/r1, p2=mu/r2;
-    double pz = sqrt(2*(lambda[0] - y*px + x*py + p1 + p2) - SQR(px) - SQR(py) );  // computing pz from the remaining variables and the Hamiltonian
-    return pz;
+
+    // The Hamiltonian should be contained in lambda[0] (But I'm just going to pass it in as a parameter for now)
+    double xmmu = q1 - mu, xmmup1 = xmmu + 1,
+           r12 = SQR(xmmu) + SQR(q2) + SQR(q3),
+           r22 = SQR(xmmup1) + SQR(q2) + SQR(q3),
+           r1 = sqrt(r12), r2 = sqrt(r22);
+    double p3 = sqrt(2 * (H - q2 * p1 + q1 * p2 + (1 - mu) / r1 + mu / r2) - SQR(p1) - SQR(p2)); // computing pz from the remaining variables and the Hamiltonian
+    return p3;
 }
 
 void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
 {
     /* I'm doing a poincare map at a fixed energy level, so I have 4 DOF
-    z \in R^4 = (x, z, px, pz) 
+    z \in R^4 = (x, z, px, pz)
     I know that y = 0 because we are in the x-z plane (the Poincare map I've defined)
     I can compute py from the Jacobi constant, which is conserved
-    */    
+    */
 
-//   I need to make a 6D state to propagate and get the poincare map back
+    //   I need to make a 6D state to propagate and get the poincare map back
+    double q1, q2, p1, p2;
+    q1 = z[0].real;
+    q2 = z[1].real;
+    p1 = z[2].real;
+    p2 = z[3].real;
     double mu = 1.901109735892602e-7;
-    double pz = get_pz(z[0].real, 0, z[1].real, z[2].real, z[3].real, mu);
-    double x[6] = {z[0].real, 0, z[2].real, z[3].real, z[4].real, pz};
+    double xmmu = q1 - mu, xmmup1 = xmmu + 1;
+    double r12 = SQR(xmmu) + SQR(q2);
+    double r22 = SQR(xmmup1) + SQR(q2);
+    double r1 = sqrt(r12);
+    double r2 = sqrt(r22);
+    double r13 = r1 * r1 * r1;
+    double r23 = r2 * r2 * r2;
+    // double dp3dq1 = 2 * (p2 - (1 - mu) * (xmmup1) / r13 - mu * (xmmup1) / r23);
+    // double dp3dq2 = 2 * (-p1 - (1 - mu) * (q2) / r13 - mu * (q2) / r23);
+    // double dp3dp1 = -2 * q2 - 2 * p1;
+    // double dp3dp2 = 2 * q1 - 2 * p2;
+    
+    
+    double p3 = get_pz(q1, q2, 0, p1, p2, mu, lambda[0]);
+    double x[42];
+    x[0] = z[0].real;
+    x[1] = z[1].real;
+    x[2] = 0;
+    x[3] = z[2].real;
+    x[4] = z[3].real;
+    x[5] = p3;
+    for (int i = 6; i < 42; i++)
+    {
+        x[i] = 0;
+    }
+    x[6] = 1; // filling the rest of the array with a vectorized identity matrix
+    x[13] = 1;
+    x[20] = 1;
+    x[27] = 1;
+    x[34] = 1;
+    x[41] = 1;
+
     int n = 6;
     int np = 0;
 
-    int nv = 6; // Number of variables in the vector field??? Why is this different than n?
+    int nv = 42;   // Number of variables in the vector field??? Why is this different than n?, because it could include the STM and go up to 42
     int ibck = 0; // If ibck==1, backward in time (forward if ==0)
     int isiggrad = 0;
     double tolJM = 1e-12;
@@ -926,49 +976,134 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     int ivb = 1;
     int nsecss = 1;
     int nsec = 1; // nsec1 is the number of passes through each section. Since we have only one section, I'm going to make it just an int
-    double cp[7] = {0, 1, 0, 0, 0, 0, 0};
+    double cp[7] = {0, 0, 1, 0, 0, 0, 0}; // don't remember why this is 7 dimensional? (the last one is the constant term, in case the hyperplane is offset from the origin)
     double t = 0;
     double h = fluxvp_pas0;
-    if (ibck) h = -h;
+    if (ibck)
+        h = -h;
     FILE *fp = NULL;
-    
 
     /*
-    * n : dimension of the initial condition vector
-    * nv : number of variables in the vector field
-    * np : number of parameters in the vector field
-    * camp : vector field
-    * prm : parameters of the vector field
-    * t : time
-    * x : initial condition (gets updated with the final condition)
-    * h : step
-    * cp : coefficients of the Poincaré section
-    * nsec : number of sections to cross
-    * isiggrad : if 1, the gradient of the return map is computed
-    * tol : tolerance
-    * ivb : verbosity level???
-    * idt : if 1, the differential of the return map is computed
-    * dt : differential of the return map
-    * wrtf : function to write the states to a file
-    * wrtf_prm : parameters of the function to write the states to a file
-    * maxts : maximum time to integrate
-    */
+     * n : dimension of the initial condition vector
+     * nv : number of variables in the vector field
+     * np : number of parameters in the vector field
+     * camp : vector field
+     * prm : parameters of the vector field
+     * t : time
+     * x : initial condition (gets updated with the final condition)
+     * h : step
+     * cp : coefficients of the Poincaré section
+     * nsec : number of sections to cross
+     * isiggrad : if 1, the gradient of the return map is computed
+     * tol : tolerance
+     * ivb : verbosity level???
+     * idt : if 1, the differential of the return map is computed
+     * dt : differential of the return map
+     * wrtf : function to write the states to a file
+     * wrtf_prm : parameters of the function to write the states to a file
+     * maxts : maximum time to integrate
+     */
+    double Dtau[6];
     seccp(n, nv /*nv*/, np /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t, x, &h, cp,
-            nsec, isiggrad, tolJM, ivb, 0 /*idt*/, NULL /*dt*/, wrtf, fp, maxts);
-  
-    fz[0] = x[0]; // x
-    // y, or x[1], is not part of my state and should equal zero
-    fz[1] = x[2]; // z
-    fz[2] = x[3]; // px
-    fz[3] = x[4]; // py
-    // pz, or x[5], is not part of my state
+          nsec, isiggrad, tolJM, ivb, 1 /*idt*/, Dtau /*dt*/, wrtf, fp, maxts);
 
+    fz[0].real = x[0]; // x
+    fz[0].imag = val0;
+    fz[1].real = x[1]; // y
+    fz[1].imag = val0;
+    // x[2], or z, is not part of my state
+    fz[2].real = x[3]; // px
+    fz[2].imag = val0;
+    fz[3].real = x[4]; // py
+    fz[3].imag = val0;
+    // p3, or x[5], is not part of my state
+    /*We fill in DP with the STM, then we'll change it to be the actual differential of the Pmap by adding f_tau*Dtau */
+    double DP[6][6];
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < 6; j++)
+        {
+            DP[i][j] = x[6 + 6 * i + j]; // fill the rest of the matrix with the STM
+        }
+    }
+    
     // Todo: compute the Jacobian of the map
+    // DP = PHI + f_tau*Dtau (this is the differential of the Poincare map)
+    // DP = (I - (f_tau*Dsigma/Dsigma*f_tau))*PHI (This is another way of writing it, but I already det Dtau from the seccp function, so the line above is easier)
+    double f_tau[6]; // initializes f_tau (the vector field at the final point)
+    rtbphp(n, np, &mu, 0, x, f_tau); // fills f_tau with the time derivatives of x (at the final time)
+
+    // double Dsigma[6];
+    // for (int i = 0; i < 6; i++)
+    // {
+    //     Dsigma[i] = cp[i]; // pull from the definition of cp (it's the normal vector to the hyperplane)
+    // }
+
+    // double denom = 0;
+    // for (int i = 0; i < 6; i++)
+    // {
+    //     denom += Dsigma[i]*f_tau[i]; // This is actually done inside of seccp function
+    // }
+
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < 6; j++)
+        {
+            DP[i][j] = DP[i][j] + f_tau[i]*Dtau[j]; // we add the outer product
+        }
+    }
+
+    /*Compute the differential of the mapping from R4 to Sigma*/
+    int Dnu[6][4];
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            Dnu[i][j] = 0; // fill it with zeros
+        }
+    }
+    Dnu[0][0] = 1;  Dnu[1][1] = 1;  Dnu[3][2] = 1;  Dnu[4][3] = 1;
+    double dp3dq1 = 2 * (p2 - (1 - mu) * (xmmup1) / r13 - mu * (xmmup1) / r23);
+    double dp3dq2 = 2 * (-p1 - (1 - mu) * (q2) / r13 - mu * (q2) / r23);
+    double dp3dp1 = -2 * q2 - 2 * p1;
+    double dp3dp2 = 2 * q1 - 2 * p2;
+    Dnu[5][0] = dp3dq1; Dnu[5][1] = dp3dq2; Dnu[5][2] = dp3dp1; Dnu[5][3] = dp3dp2;
+
+    /*Compute the differential of the mapping from Sigma to R4*/
+    int DnuInv[4][6];
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 6; j++)
+        {
+            DnuInv[i][j] = 0; // fill it with zeros
+        }
+    }
+    DnuInv[0][0] = 1;  DnuInv[1][1] = 1;  DnuInv[2][3] = 1;  DnuInv[3][4] = 1;
+    
+    /*Multiply DP and Dnu*/
+    double DPDnu[6][4];
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            DPDnu[i][j] = 0;
+            for (int k = 0; k < 6; k++)
+            {
+                DPDnu[i][j] += DP[i][k]*Dnu[k][j];
+            }
+        }
+    }
+    /*multiply DnuInv and DPDnu*/
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
             Dfz[i][j].real = 0;
+            Dfz[i][j].imag = 0;
+            for (int k = 0; k < 6; k++)
+            {
+                Dfz[i][j].real += DnuInv[i][k]*DPDnu[k][j];
+            }
         }
     }
 
@@ -976,12 +1111,13 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     for (int i = 0; i < 4; i++)
     {
         depfz[i].real = 0;
+        depfz[i].imag = 0;
     }
 }
 
 void sform_CR3BP(complex *z, complex **Omegaz)
 {
-    //fill omega matrix with 2x2 negative identity in the top right corner, and normal identity matrix in the bottom left corner
+    // fill omega matrix with 2x2 negative identity in the top right corner, and normal identity matrix in the bottom left corner
     Omegaz[0][0] = val0;
     Omegaz[0][1] = val0;
     Omegaz[0][2] = -val1;
@@ -991,7 +1127,7 @@ void sform_CR3BP(complex *z, complex **Omegaz)
     Omegaz[1][1] = val0;
     Omegaz[1][2] = val0;
     Omegaz[1][3] = -val1;
- 
+
     Omegaz[2][0] = val1;
     Omegaz[2][1] = val0;
     Omegaz[2][2] = val0;
@@ -1012,36 +1148,36 @@ void gform_CR3BP(complex *z, complex **Metricz)
     p1 = z[2].real;
     p2 = z[3].real;
     double mu = 1.901109735892602e-7;
-    double xmmu=q1-mu, xmmup1=xmmu+1;
+    double xmmu = q1 - mu, xmmup1 = xmmu + 1;
     double r12 = SQR(xmmu) + SQR(q2);
     double r22 = SQR(xmmup1) + SQR(q2);
     double r1 = sqrt(r12);
-    double r2=sqrt(r22);
-    double r13 = r1*r1*r1;
-    double r23 = r2*r2*r2;
-    double dp3dq1 = 2*(p2 - (1-mu)*(xmmup1)/r13 - mu*(xmmup1)/r23);
-    double dp3dq2 = 2*(-p1 - (1-mu)*(q2)/r13 - mu*(q2)/r23);
-    double dp3dp1 = -2*q2 - 2*p1;
-    double dp3dp2 = 2*q1 - 2*p2;
+    double r2 = sqrt(r22);
+    double r13 = r1 * r1 * r1;
+    double r23 = r2 * r2 * r2;
+    double dp3dq1 = 2 * (p2 - (1 - mu) * (xmmup1) / r13 - mu * (xmmup1) / r23);
+    double dp3dq2 = 2 * (-p1 - (1 - mu) * (q2) / r13 - mu * (q2) / r23);
+    double dp3dp1 = -2 * q2 - 2 * p1;
+    double dp3dp2 = 2 * q1 - 2 * p2;
     // Just a big Identity matrix
     Metricz[0][0] = val1 + SQR(dp3dq1);
-    Metricz[0][1] = val0 + dp3dq1*dp3dq2;
-    Metricz[0][2] = val0 + dp3dq1*dp3dp1;
-    Metricz[0][3] = val0 + dp3dq1*dp3dp2;
+    Metricz[0][1] = val0 + dp3dq1 * dp3dq2;
+    Metricz[0][2] = val0 + dp3dq1 * dp3dp1;
+    Metricz[0][3] = val0 + dp3dq1 * dp3dp2;
 
-    Metricz[1][0] = val0 + dp3dq2*dp3dq1;
+    Metricz[1][0] = val0 + dp3dq2 * dp3dq1;
     Metricz[1][1] = val1 + SQR(dp3dq2);
-    Metricz[1][2] = val0 + dp3dq2*dp3dp1;
-    Metricz[1][3] = val0 + dp3dq2*dp3dp2;
+    Metricz[1][2] = val0 + dp3dq2 * dp3dp1;
+    Metricz[1][3] = val0 + dp3dq2 * dp3dp2;
 
-    Metricz[2][0] = val0 + dp3dp1*dp3dq1;
-    Metricz[2][1] = val0 + dp3dp1*dp3dq2;
+    Metricz[2][0] = val0 + dp3dp1 * dp3dq1;
+    Metricz[2][1] = val0 + dp3dp1 * dp3dq2;
     Metricz[2][2] = val1 + SQR(dp3dp1);
-    Metricz[2][3] = val0 + dp3dp1*dp3dp2;
+    Metricz[2][3] = val0 + dp3dp1 * dp3dp2;
 
-    Metricz[3][0] = val0 + dp3dp2*dp3dq1;
-    Metricz[3][1] = val0 + dp3dp2*dp3dq2;
-    Metricz[3][2] = val0 + dp3dp2*dp3dp1;
+    Metricz[3][0] = val0 + dp3dp2 * dp3dq1;
+    Metricz[3][1] = val0 + dp3dp2 * dp3dq2;
+    Metricz[3][2] = val0 + dp3dp2 * dp3dp1;
     Metricz[3][3] = val1 + SQR(dp3dp2);
 }
 
@@ -1060,7 +1196,6 @@ void normal0_CR3BP(matrix &N0, int *nn, int nelem)
         N0.coef[3][1].elem[l] = val1;
     }
 }
-
 
 void map_standard(complex *z, complex *fz, complex **Dfz, complex *depfz)
 {
@@ -1103,7 +1238,6 @@ void normal0_standard(matrix &N0, int *nn, int nelem)
         N0.coef[1][0].elem[l] = val1;
     }
 }
-
 
 // int pmap()
 // {

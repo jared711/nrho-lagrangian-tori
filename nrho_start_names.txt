@@ -4,7 +4,8 @@
 0.414213562373095049 #omega[1]
 0.732050807568877294 #omega[2]
 0.0 #epsilon
-3.0 #lambda[0]
+3.0 #lambda[0] Jacobi constant or hamiltonian
+1.901109735892602e-7 #lambda[1] mu
 2 #nn[0]
 2 #nn[1]
 5e-5 #deps
