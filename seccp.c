@@ -25,7 +25,7 @@ inline
    int i;
    for (i = 0; i < n; i++)
       ret += cp[i] * x[i];
-   ret += cp[n]; // the last element of cp is the constant term in case the hyperplane is offset from the origin
+   ret += cp[n];
    return ret;
 }
 
