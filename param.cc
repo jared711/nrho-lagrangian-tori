@@ -108,6 +108,8 @@ void gform_standard(complex *z, complex **Metricz);
 void normal0_standard(matrix &N0, int *nn, int nelem);
 
 /* functions created by Jared Blanchard May, 2024*/
+void nu(complex *z, double *x, double (*Dnu)[4]);
+void get_dp3(complex *z, double *dp3);
 void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz);
 void sform_CR3BP(complex *z, complex **Omegaz);
 void gform_CR3BP(complex *z, complex **Metricz);
@@ -897,7 +899,8 @@ void normal0_froeschle(matrix &N0, int *nn, int nelem)
     }
 }
 
-double get_pz(double q1, double q2, double q3, double p1, double p2, double mu, double H)
+// double get_p3(double q1, double q2, double q3, double p1, double p2) //, double mu, double H)
+void get_p3(double *x)
 {
     // The Hamiltonian is defined in rtbphp.c as shown below
     // double rtbphp_h (int n, int np, void *prm, double x[]) {
@@ -909,13 +912,60 @@ double get_pz(double q1, double q2, double q3, double p1, double p2, double mu, 
     //    return .5*(SQR(PX)+SQR(PY)+SQR(PZ))+Y*PX-X*PY-p1-p2;
     // }
 
-    // The Hamiltonian should be contained in lambda[0] (But I'm just going to pass it in as a parameter for now)
+    // The Hamiltonian should be contained in lambda[0] and mu in lambda[1]
+    double H = lambda[0];
+    double mu = lambda[1];
+    double q1 = x[0];   double q2 = x[1];   double q3 = x[2];
+    double p1 = x[3];   double p2 = x[4];
     double xmmu = q1 - mu, xmmup1 = xmmu + 1,
            r12 = SQR(xmmu) + SQR(q2) + SQR(q3),
            r22 = SQR(xmmup1) + SQR(q2) + SQR(q3),
            r1 = sqrt(r12), r2 = sqrt(r22);
-    double p3 = sqrt(2 * (H - q2 * p1 + q1 * p2 + (1 - mu) / r1 + mu / r2) - SQR(p1) - SQR(p2)); // computing pz from the remaining variables and the Hamiltonian
-    return p3;
+    x[5] = sqrt(2 * (H - q2 * p1 + q1 * p2 + (1 - mu) / r1 + mu / r2) - SQR(p1) - SQR(p2)); // computing pz from the remaining variables and the Hamiltonian
+    // return p3;
+}
+
+void get_dp3(complex *z, double *dp3){
+    double mu = lambda[1];
+    double q1 = z[0].real;  double q2 = z[1].real;
+    double p1 = z[2].real;  double p2 = z[4].real;
+    double xmmu = q1 - mu, xmmup1 = xmmu + 1;
+    double r12 = SQR(xmmu) + SQR(q2);
+    double r22 = SQR(xmmup1) + SQR(q2);
+    double r1 = sqrt(r12);
+    double r2 = sqrt(r22);
+    double r13 = r1 * r1 * r1;
+    double r23 = r2 * r2 * r2;
+    dp3[0] = 2 * ( p2 - (1 - mu) * (xmmu) / r13 - mu * (xmmup1) / r23); // dp3dq1
+    dp3[1] = 2 * (-p1 - (1 - mu) *   (q2) / r13 - mu *     (q2) / r23); // dp3dq2
+    dp3[2] = -2 * q2 - 2 * p1; // dp3dp1
+    dp3[3]= 2 * q1 - 2 * p2; // dp3dp2
+}
+
+/* nu takes the 4D state and returns the 6D state on the Poincare Map along with the differential*/
+void nu(complex *z, double *x, double (*Dnu)[4]){
+    x[0] = z[0].real; // q1
+    x[1] = z[1].real; // q2
+    x[2] = 0;         // q3
+    x[3] = z[2].real; // p1
+    x[4] = z[3].real; // p2
+    get_p3(x); // p3
+
+    /*Compute the differential of the mapping from R4 to Sigma*/
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < 4; j++)
+        {
+            Dnu[i][j] = 0; // fill it with zeros
+        }
+    }
+    // put in the ones
+    Dnu[0][0] = 1;  Dnu[1][1] = 1;  Dnu[3][2] = 1;  Dnu[4][3] = 1;
+    
+    // get the differential of p3 with respect to the 4D state
+    double dp3[4];
+    get_dp3(z, dp3); // dp3dq1, dp3dq2, dp3dp1, dp3dp2
+    Dnu[5][0] = dp3[0]; Dnu[5][1] = dp3[1]; Dnu[5][2] = dp3[2]; Dnu[5][3] = dp3[3];
 }
 
 void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
@@ -927,54 +977,31 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     */
 
     //   I need to make a 6D state to propagate and get the poincare map back
-    double q1, q2, p1, p2;
-    q1 = z[0].real;
-    q2 = z[1].real;
-    p1 = z[2].real;
-    p2 = z[3].real;
-    double mu = 1.901109735892602e-7;
-    double xmmu = q1 - mu, xmmup1 = xmmu + 1;
-    double r12 = SQR(xmmu) + SQR(q2);
-    double r22 = SQR(xmmup1) + SQR(q2);
-    double r1 = sqrt(r12);
-    double r2 = sqrt(r22);
-    double r13 = r1 * r1 * r1;
-    double r23 = r2 * r2 * r2;
-    // double dp3dq1 = 2 * (p2 - (1 - mu) * (xmmup1) / r13 - mu * (xmmup1) / r23);
-    // double dp3dq2 = 2 * (-p1 - (1 - mu) * (q2) / r13 - mu * (q2) / r23);
-    // double dp3dp1 = -2 * q2 - 2 * p1;
-    // double dp3dp2 = 2 * q1 - 2 * p2;
+    double mu = lambda[0];
     
-    
-    double p3 = get_pz(q1, q2, 0, p1, p2, mu, lambda[0]);
+    /* Map from 4D to 6D space on Poincare section */
+    /* Todo function nu()*/
     double x[42];
-    x[0] = z[0].real;
-    x[1] = z[1].real;
-    x[2] = 0;
-    x[3] = z[2].real;
-    x[4] = z[3].real;
-    x[5] = p3;
+    double Dnu[6][4];
+    nu(z, x, Dnu); // Does the mapping from 4D (z) to 6D (x), the extra 36 states will be filled by the STM
+    
+    // Fill in the rest of the state with the STM
     for (int i = 6; i < 42; i++)
     {
         x[i] = 0;
     }
-    x[6] = 1; // filling the rest of the array with a vectorized identity matrix
-    x[13] = 1;
-    x[20] = 1;
-    x[27] = 1;
-    x[34] = 1;
-    x[41] = 1;
+    // filling the rest of the array with a vectorized identity matrix
+    x[6] = 1;   x[13] = 1;  x[20] = 1;  x[27] = 1;  x[34] = 1;  x[41] = 1;
 
-    int n = 6;
-    int np = 0;
-
-    int nv = 42;   // Number of variables in the vector field??? Why is this different than n?, because it could include the STM and go up to 42
+    // int n = 6;
+    // int nv = 42;   // Number of variables in the vector field??? Why is this different than n?, because it could include the STM and go up to 42
+    // int np = 0;
     int ibck = 0; // If ibck==1, backward in time (forward if ==0)
     int isiggrad = 0;
     double tolJM = 1e-12;
     double maxts = 13;
-    int ivb = 1;
-    int nsecss = 1;
+    // int ivb = 1;
+    // int nsecss = 1;
     int nsec = 1; // nsec1 is the number of passes through each section. Since we have only one section, I'm going to make it just an int
     double cp[7] = {0, 0, 1, 0, 0, 0, 0}; // don't remember why this is 7 dimensional? (the last one is the constant term, in case the hyperplane is offset from the origin)
     double t = 0;
@@ -1003,9 +1030,9 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
      * wrtf_prm : parameters of the function to write the states to a file
      * maxts : maximum time to integrate
      */
-    double Dtau[6];
-    seccp(n, nv /*nv*/, np /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t, x, &h, cp,
-          nsec, isiggrad, tolJM, ivb, 1 /*idt*/, Dtau /*dt*/, wrtf, fp, maxts);
+    double Dtau[6]; // initialize the derivative of the time of flight with respect to the initial condition (gets filled in within seccp)
+    seccp(6 /*n*/, 42 /*nv*/, 0 /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t /*&t*/, x /*x*/, &h /*&h*/, cp /*psec hyperplane*/,
+          1 /*nsec*/, isiggrad /*isiggrad*/, tolJM /*tol*/, 1 /*ivb*/, 1 /*idt*/, Dtau /*dt*/, wrtf /*write function*/, fp /*filename*/, 13 /*maxts*/);
 
     fz[0].real = x[0]; // x
     fz[0].imag = val0;
@@ -1027,11 +1054,11 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
         }
     }
     
-    // Todo: compute the Jacobian of the map
+    // Compute the Jacobian of the map
     // DP = PHI + f_tau*Dtau (this is the differential of the Poincare map)
     // DP = (I - (f_tau*Dsigma/Dsigma*f_tau))*PHI (This is another way of writing it, but I already det Dtau from the seccp function, so the line above is easier)
     double f_tau[6]; // initializes f_tau (the vector field at the final point)
-    rtbphp(n, np, &mu, 0, x, f_tau); // fills f_tau with the time derivatives of x (at the final time)
+    rtbphp(6 /*n*/, 0 /*np*/, &mu /*prm*/, 0 /*t*/, x /*x*/, f_tau /*dx/dt*/); // fills f_tau with the time derivatives of x (at the final time)
 
     // double Dsigma[6];
     // for (int i = 0; i < 6; i++)
@@ -1052,22 +1079,6 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
             DP[i][j] = DP[i][j] + f_tau[i]*Dtau[j]; // we add the outer product
         }
     }
-
-    /*Compute the differential of the mapping from R4 to Sigma*/
-    int Dnu[6][4];
-    for (int i = 0; i < 6; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            Dnu[i][j] = 0; // fill it with zeros
-        }
-    }
-    Dnu[0][0] = 1;  Dnu[1][1] = 1;  Dnu[3][2] = 1;  Dnu[4][3] = 1;
-    double dp3dq1 = 2 * (p2 - (1 - mu) * (xmmup1) / r13 - mu * (xmmup1) / r23);
-    double dp3dq2 = 2 * (-p1 - (1 - mu) * (q2) / r13 - mu * (q2) / r23);
-    double dp3dp1 = -2 * q2 - 2 * p1;
-    double dp3dp2 = 2 * q1 - 2 * p2;
-    Dnu[5][0] = dp3dq1; Dnu[5][1] = dp3dq2; Dnu[5][2] = dp3dp1; Dnu[5][3] = dp3dp2;
 
     /*Compute the differential of the mapping from Sigma to R4*/
     int DnuInv[4][6];
