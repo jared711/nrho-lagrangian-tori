@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
     cout << "indict: " << indict << endl;
     // state2ham(x);
 
-    return 0;
+    // return 0;
 
     // cout << "hey"   << endl;
     // flowvp(1/*N*/,6/*n number of states?*/,0/*number of parameters?*/,&mu/*parameter*/,rtbphp/*vfld*/,
@@ -1032,7 +1032,7 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
      */
     double Dtau[6]; // initialize the derivative of the time of flight with respect to the initial condition (gets filled in within seccp)
     seccp(6 /*n*/, 42 /*nv*/, 0 /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t /*&t*/, x /*x*/, &h /*&h*/, cp /*psec hyperplane*/,
-          1 /*nsec*/, isiggrad /*isiggrad*/, tolJM /*tol*/, 1 /*ivb*/, 1 /*idt*/, Dtau /*dt*/, wrtf /*write function*/, fp /*filename*/, 13 /*maxts*/);
+          1 /*nsec*/, isiggrad /*isiggrad*/, tolJM /*tol*/, 0 /*ivb*/, 1 /*idt*/, Dtau /*dt*/, wrtf /*write function*/, fp /*filename*/, 13 /*maxts*/);
 
     fz[0].real = x[0]; // x
     fz[0].imag = val0;

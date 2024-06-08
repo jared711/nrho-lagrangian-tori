@@ -49,7 +49,7 @@ x = w[1:6] # final state
 
 # import ThreeBodyProblem.eig
 λ, V = eig(Φ)
-stability_index(Φ)
+@assert isapprox(stability_index(Φ), ν, atol=1e-6)
 
 # Time to approximate an invariant 2 torus on the stroboscopic map
 # We'll use the eigenvectors of the STM to approximate the torus
@@ -60,19 +60,53 @@ n = 6 # Number of dimensions of the system
 eig_idx1 = 4
 eig_idx2 = 6
 
+ρ₁ = atan(imag(λ[eig_idx1]),real(λ[eig_idx1])) # Angle of the first eigenvector
+ρ₂ = atan(imag(λ[eig_idx2]),real(λ[eig_idx2])) # Angle of the second eigenvector
+ω₁ = ρ₁/T₀
+ω₂ = ρ₂/T₀
+
 θ = 2π*(0:N-1)/N # Angles for the invariant circle
 α = 1e-5 # parameter to control the size of the invariant circle
 β = 1e-5
-u = zeros(n,N^2) # Initialize the invariant circle
+u = zeros(N^2,n) # Initialize the invariant circle
+idx1_vec = []
+idx2_vec = []
 uidx = 0
-for θ₁ in θ
-    for θ₂ in θ
+for (idx1, θ₁) in enumerate(θ)
+    for (idx2, θ₂) in enumerate(θ)
         uidx += 1
-        u[:,uidx] = α*(cos(θ₁)*real(V[:,eig_idx1]) - sin(θ₁)*imag(V[:,eig_idx1])) + β*(cos(θ₂)*real(V[:,eig_idx2]) - sin(θ₂)*imag(V[:,eig_idx2])) # Initial guess for the invariant circle
+        u[uidx,:] = α*(cos(θ₁)*real(V[:,eig_idx1]) - sin(θ₁)*imag(V[:,eig_idx1])) + β*(cos(θ₂)*real(V[:,eig_idx2]) - sin(θ₂)*imag(V[:,eig_idx2])) # Initial guess for the invariant circle
+        u[uidx,:] += x
+        push!(idx1_vec, idx1)
+        push!(idx2_vec, idx2)
     end
 end
 
-DataFrame(u',["q₁","q₂","q₃","p₁","p₂","p₃"]) # Display the invariant circle in the Hamiltonian coordinates
+H = [computeH(u[i,:],μ) for i in 1:N^2] # Compute the Jacobi constant of the invariant circle
+paramsdf = DataFrame(
+    toltail = 1.0e-13,
+    tolinva = 1.0e-12,
+    tolinte = 1.0e-17,
+    ω₁ = ω₁,
+    ω₂ = ω₂,
+    ε = 0.0,
+    λ₁ = H₀,
+    λ₂ = μ,
+    n₁ = N,
+    n₂ = N,
+    dε = 5e-5,
+    auxint = 1
+)
+udf = DataFrame(u[:,[1,2,4,5]],["q₁","q₂","p₁","p₂"]) # Display the invariant circle in the Hamiltonian coordinates
+udf.idx1 = idx1_vec
+udf.idx2 = idx2_vec
+select!(udf, "idx1", "idx2", :)
+# udf[!,:idx1 ] = parse.(Int64,udf[:,:idx1 ])
+# transform!(udf, "idx1" .=> Int64; renamecols = false)
+# udf[:,"idx1"] = convert.(Int64, udf[!,"idx1"])
+
+CSV.write("testHalo.csv", paramsdf, delim=' ',writeheader=false, append=false)
+CSV.write("testHalo.csv", udf, writeheader=false, delim=' ',append=true)
 
 T₀ = [γ⁻¹(x₀ + u[:,i]) for i in 1:N^2] # Initial guess for the invariant circle in the Hamiltonian coordinates
 CSV.write("T₀.csv", DataFrame(T₀), writeheader=false)
@@ -100,4 +134,3 @@ plot!(System(ENCELADUS,SATURN),sec=false,Lpts=false, lims=:auto);
 
 plot_halo = plot(pxy,pyz,pxz,layout=(1,3),legend=:outertop) # plot all of the plots in a 2x2 grid
 # plot_halo = plot(pxy,pyz,pxz,pall,layout=(1,4),title="Halo Orbit") # plot all of the plots in a 2x2 grid
-
