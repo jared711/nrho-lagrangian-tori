@@ -192,6 +192,8 @@ int main(int argc, char *argv[])
         file_input >> lambda[j];
         cout << "#lambda[" << j << "]: " << lambda[j] << endl;
     }
+    cout << "lambda[0] should be H0" << endl;
+    cout << "lambda[1] should be mu" << endl;
     for (int j = 0; j < DTOR; j++)
     {
         file_input >> nn[j]; // dimesions of the torus that you're trying to compute
@@ -239,9 +241,33 @@ int main(int argc, char *argv[])
     file_input.close();
     /**** END   We read an invariant torus from the file ****/
 
+
     paramF = fft_F(paramR);
+    // print out all components of paramR and paramF
+    // for (int i = 0; i < DMAP; i++)
+    // {
+    //     for (int j = 0; j < nelem; j++)
+    //     {
+    //         cout << "paramR.coef[" << i << "][0].elem[" << j << "]: " << paramR.coef[i][0].elem[j].real << endl;
+    //     }
+    // }
+    // for (int i = 0; i < DMAP; i++)
+    // {
+    //     for (int j = 0; j < nelem; j++)
+    //     {
+    //         cout << "paramF.coef[" << i << "][0].elem[" << j << "]: " << paramF.coef[i][0].elem[j].real << endl;
+    //     }
+    // }
+    // return 0;
+
     /* If the initial torus is not invariant, we shold uncomment the following line: */
-    // conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_froeschle,sform_froeschle,gform_froeschle);
+    conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_CR3BP,normal0_CR3BP);
+
+    conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_CR3BP,normal0_CR3BP);
+
+    // return 0;
+
+
     paramR0 = matrix(paramR);
     paramF0 = matrix(paramF);
     epsilon0 = epsilon;
@@ -255,26 +281,29 @@ int main(int argc, char *argv[])
     // vfldvp_t rtbphp;
     // double x[6] = {1.0025904252283664E+0, 1.2103594028238294E-20, 4.8802791235671040E-3, -1.3013300877803077E-15, -5.4593457318909567E-3, -1.2951908078310448E-14};
 
-    double x[6] = {-0.9975334497794613, 0, -0.00489434320310318, 1.383426648384139E-16, -1.002834494433839, -1.991818118201947E-16};
-    double mu = 1.901109735892602e-7;
-    lambda[0] = rtbphp_h(6, 0, &mu, x);
-    int ibck = 0; // If ibck==1, backward in time (forward if ==0)
-    int isiggrad = 0;
-    double tolJM = 1e-12;
-    double maxts = 13;
-    int ivb = 1;
-    int nsecss = 1;
-    int nsec = 1; // nsec1 is the number of passes through each section. Since we have only one section, I'm going to make it just an int
-    double cp[7] = {0, 0, 1, 0, 0, 0, 0};
-    double t = 0;
-    double h = fluxvp_pas0;
-    if (ibck)
-        h = -h;
-    FILE *fp = NULL;
-    int indict = 0;
-    indict = seccp(6, 6 /*nv*/, 0 /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t, x, &h, cp,
-                   nsec, isiggrad, tolJM, ivb, 0 /*idt*/, NULL /*dt*/, wrtf, fp, maxts);
-    cout << "indict: " << indict << endl;
+    // // This was to check that seccp actually works correctly (commented out 7/1/24)
+    // double x[6] = {-0.9975334497794613, 0, -0.00489434320310318, 1.383426648384139E-16, -1.002834494433839, -1.991818118201947E-16};
+    // double mu = 1.901109735892602e-7;
+    // lambda[0] = rtbphp_h(6, 0, &mu, x);
+    // int ibck = 0; // If ibck==1, backward in time (forward if ==0)
+    // int isiggrad = 1;
+    // double tolJM = 1e-12;
+    // double maxts = 13;
+    // int ivb = 1;
+    // int nsecss = 1;
+    // int nsec = 1; // nsec1 is the number of passes through each section. Since we have only one section, I'm going to make it just an int
+    // double cp[7] = {0, 0, 1, 0, 0, 0, 0};
+    // double t = 0;
+    // double h = fluxvp_pas0;
+    // if (ibck)
+    //     h = -h;
+    // // FILE *fp = NULL;
+    // FILE *fp = fopen("mypoint.txt", "w");
+    // int indict = 0;
+    // indict = seccp(6, 6 /*nv*/, 0 /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t, x, &h, cp,
+    //                nsec, isiggrad, tolJM, ivb, 0 /*idt*/, NULL /*dt*/, wrtf, fp, maxts);
+    // cout << "indict: " << indict << endl;
+    // return 0;
     // state2ham(x);
 
     // return 0;
@@ -581,8 +610,8 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
         for (int i = 0; i < DMAP; i++)
         {
             z[i] = paramR.coef[i][0].elem[l];
-            if (i < DTOR)
-                z[i] = z[i] + ((double)index[i]) / ((double)nn[i]);
+            // if (i < DTOR) // Jared wants to comment out these lines on 6/27/24
+                // z[i] = z[i] + ((double)index[i]) / ((double)nn[i]);
         }
         (*map)(z, fz, Dfz, depfz);
         (*sform)(z, Omegaz);
@@ -977,7 +1006,7 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     */
 
     //   I need to make a 6D state to propagate and get the poincare map back
-    double mu = lambda[0];
+    double mu = lambda[1];
     
     /* Map from 4D to 6D space on Poincare section */
     /* Todo function nu()*/
@@ -997,19 +1026,21 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     // int nv = 42;   // Number of variables in the vector field??? Why is this different than n?, because it could include the STM and go up to 42
     // int np = 0;
     int ibck = 0; // If ibck==1, backward in time (forward if ==0)
-    int isiggrad = 0;
+    int isiggrad = 1; // needs to be 1 so that the pmap stops in the direction of cp
     double tolJM = 1e-12;
     double maxts = 13;
     // int ivb = 1;
     // int nsecss = 1;
     int nsec = 1; // nsec1 is the number of passes through each section. Since we have only one section, I'm going to make it just an int
-    double cp[7] = {0, 0, 1, 0, 0, 0, 0}; // don't remember why this is 7 dimensional? (the last one is the constant term, in case the hyperplane is offset from the origin)
+    double cp[7] = {0, 0, 1, 0, 0, 0, 0}; // This is 7 dimensional because the last one is the constant term, in case the hyperplane is offset from the origin
     double t = 0;
     double h = fluxvp_pas0;
     if (ibck)
         h = -h;
     FILE *fp = NULL;
-
+    // FILE *fp = fopen("mytraj.txt", "w");
+    // FILE
+    // setvbuf(fp,NULL,_IOLBF,1024); // Josep-Maria added this so that it would print to the mytraj.txt file correctly (but I just commented it on 7/1/24 because it was causing a segmentation fault after several trajectories)
     /*
      * n : dimension of the initial condition vector
      * nv : number of variables in the vector field
@@ -1056,7 +1087,7 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     
     // Compute the Jacobian of the map
     // DP = PHI + f_tau*Dtau (this is the differential of the Poincare map)
-    // DP = (I - (f_tau*Dsigma/Dsigma*f_tau))*PHI (This is another way of writing it, but I already det Dtau from the seccp function, so the line above is easier)
+    // DP = (I - (f_tau*Dsigma/Dsigma*f_tau))*PHI (This is another way of writing it, but I already get Dtau from the seccp function, so the line above is easier)
     double f_tau[6]; // initializes f_tau (the vector field at the final point)
     rtbphp(6 /*n*/, 0 /*np*/, &mu /*prm*/, 0 /*t*/, x /*x*/, f_tau /*dx/dt*/); // fills f_tau with the time derivatives of x (at the final time)
 
@@ -1158,7 +1189,7 @@ void gform_CR3BP(complex *z, complex **Metricz)
     q2 = z[1].real;
     p1 = z[2].real;
     p2 = z[3].real;
-    double mu = 1.901109735892602e-7;
+    double mu = lambda[1];
     double xmmu = q1 - mu, xmmup1 = xmmu + 1;
     double r12 = SQR(xmmu) + SQR(q2);
     double r22 = SQR(xmmup1) + SQR(q2);

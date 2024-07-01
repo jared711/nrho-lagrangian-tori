@@ -109,8 +109,11 @@ matrix::matrix(int nr, int nc, int ndim, int *nn)
 
 matrix::matrix(const matrix&m)
 {
+    cout << "Copy constructor of matrix" << endl;
     nrows=m.nrows;
+    cout << "nrows = " << nrows << endl;
     ncols=m.ncols;
+    cout << "ncols = " << ncols << endl;
 
     alloc_matrix();
     for(int i=0;i<nrows;i++){
@@ -239,6 +242,7 @@ matrix fft_F(const matrix& m)
     for(int i=0;i<m.nrows;i++){
         for(int j=0;j<m.ncols;j++){
             fftm.coef[i][j]=fft_F(m.coef[i][j]);
+            // cout << "fft_F: i = " << i << " j = " << j << endl;
         }
     }
     return fftm;

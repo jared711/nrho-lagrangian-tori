@@ -37,6 +37,7 @@ inline
  * seccP travessar de negatiu a positiu o de qualsevol manera. Permet
  * bolcar a un fitxer els punts que va obtenint a mida que fa passos
  * d'integració numèrica.
+ * 
  * \brief Brings an initial condition (vector of dependent variables with the
  * convention of campvp.h) to a Poincaré section. Optionally returns the
  * differential of the return application. It allows an arbitrary number of
@@ -54,23 +55,23 @@ inline
  *
  * \todo:
  * - acabar de documentar!!
- * n is the number of variables
- * nv is the number of variables
+ * n is the number of dimensions
+ * nv is the number of variables accounting for the variationals
  * np is the number of parameters
  * camp is the vector field
- * prm is the parameters
+ * prm is a pointer to the parameters (in my case, something pointing to mu) The vector field function deals with it, so it should know what to expect
  * t is the time
- * x is the vector of variables
- * h is the step
- * cp is the vector of coefficients
- * nsec is the number of sections
- * isiggrad is the signal of the gradient
+ * x is the state vector of variables including the variationals
+ * h is the step (gets modified) puts the last step size in there
+ * cp is the vector of coefficients (coefficients of the plane)
+ * nsec is the number of sections (1,2,3 cuts)
+ * isiggrad is a flag indicating whether you want to record the cuts in the direction of the vector cp ()
  * tol is the tolerance
  * ivb is the verbosity level
  * idt is the flag for the differential of the return application
  * dt is the differential of the return application
  * wrtf is the function to write the points to a file
- * wrtf_prm is the parameters for the function to write the points to a file
+ * wrtf_prm is the name of the file
  * maxts is the maximum time step
  * \return 0 if everything went OK
  * \return -1 if there was no convergence

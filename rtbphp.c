@@ -53,7 +53,7 @@ int rtbphp (int nv, int np, void *prm, double t, double x[], double f[]) {
    f[3]=PY-(p13*r1x+p23*r2x);
    p123=p13+p23;
    f[4]=-PX-Y*p123;
-   f[5]=-Z*p123;
+   f[5]=-Z*p123; // Jared Blanchard verified that his EOMs in the paper match these equations 6/27/24
    if (nv>=NV1 || np>0) {
       p15=p13/r12; p25=p23/r22;
       p125=p15+p25;
