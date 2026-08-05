@@ -11,7 +11,7 @@ include("parameterization-method.jl")
 
 # Read in the initial conditions to a dataframe
 # initial_conditions = read_initial_conditions("initial_conditions.txt")
-NRHO_L2 = CSV.read("NRHO_L2.csv", DataFrame, normalizenames=true)
+NRHO_L2 = CSV.read("data/initial_conditions/NRHO_L2.csv", DataFrame, normalizenames=true)
 
 # Take the initial conditions of the row defined by idx
 idx = 72
@@ -47,7 +47,7 @@ halo = solve(prob_halo,Vern9(),abstol=1e-12,reltol=1e-12) # solve the problem
 
 # write trajectory to CSV file
 halo_df = DataFrame(halo, [:t, :q1, :q2, :q3, :p1, :p2, :p3, :Phi11, :Phi12, :Phi13, :Phi14, :Phi15, :Phi16, :Phi21, :Phi22, :Phi23, :Phi24, :Phi25, :Phi26, :Phi31, :Phi32, :Phi33, :Phi34, :Phi35, :Phi36, :Phi41, :Phi42, :Phi43, :Phi44, :Phi45, :Phi46, :Phi51, :Phi52, :Phi53, :Phi54, :Phi55, :Phi56, :Phi61, :Phi62, :Phi63, :Phi64, :Phi65, :Phi66])
-CSV.write("halo.csv", halo_df, writeheader=true, delim=' ')
+CSV.write("data/initial_conditions/halo.csv", halo_df, writeheader=true, delim=' ')
 
 w = halo.u[end] # final state vector
 x = w[1:6] # final state
@@ -113,16 +113,16 @@ uPdf = DataFrame(uP[:,[1,2,4,5]],["q₁","q₂","p₁","p₂"]) # Display the in
 uPdf.idx1 = idx1_vec
 uPdf.idx2 = idx2_vec
 select!(uPdf, "idx1", "idx2", :)
-CSV.write("approxQPO.csv", paramsdf, delim=' ',writeheader=false, append=false)
-CSV.write("approxQPO.csv", uPdf, writeheader=false, delim=' ',append=true)
+CSV.write("data/initial_conditions/approxQPO.csv", paramsdf, delim=' ',writeheader=false, append=false)
+CSV.write("data/initial_conditions/approxQPO.csv", uPdf, writeheader=false, delim=' ',append=true)
 
 
 udf = DataFrame(u[:,[1,2,4,5]],["q₁","q₂","p₁","p₂"]) # Display the invariant circle in the Hamiltonian coordinates
 udf.idx1 = idx1_vec
 udf.idx2 = idx2_vec
 select!(udf, "idx1", "idx2", :)
-CSV.write("approxQPO.csv", paramsdf, delim=' ',writeheader=false, append=false)
-CSV.write("approxQPO.csv", udf, writeheader=false, delim=' ',append=true)
+CSV.write("data/initial_conditions/approxQPO.csv", paramsdf, delim=' ',writeheader=false, append=false)
+CSV.write("data/initial_conditions/approxQPO.csv", udf, writeheader=false, delim=' ',append=true)
 
 ### Stuff from the kam_torus function
 
@@ -151,7 +151,7 @@ scatter( u_pmap_x, u_pmap_y,label="2D torus approx",legend=true,markercolor=:red
 
 
 T₀ = [γ⁻¹(x₀ + u[:,i]) for i in 1:N^2] # Initial guess for the invariant circle in the Hamiltonian coordinates
-CSV.write("T₀.csv", DataFrame(T₀), writeheader=false)
+CSV.write("data/initial_conditions/T₀.csv", DataFrame(T₀), writeheader=false)
 
 plot_u = plot(u, xlabel="X [NON]",ylabel="Y [NON]", zlabel= "Z [NON]", legend=true,label="u",title="Approximate Invariant Circle",linecolor=:blue, marker=:x); # Plot the invariant circle
 scatter!(plot_u, [u[1][1]],[u[1][2]],[u[1][3]],label="u[1]",shape=:o,markercolor=:blue) # Plot an "x" on the first point of the invariant circle
