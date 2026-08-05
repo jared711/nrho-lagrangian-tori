@@ -1,4 +1,5 @@
 using LinearAlgebra
+using DiffEqBase: terminate!
 
 # Conventions
 # x = [q₁, q₂, q₃, p₁, p₂, p₃]
@@ -140,7 +141,7 @@ function P(x₀, μ, tmax=10) # Poincare Map
     end
     cb = OrdinaryDiffEq.ContinuousCallback(condition, affect!, nothing) # first affect is to stop when going from neg to pos, second affect is to stop when going from pos to neg
     
-    sol = solve(prob, TsitPap8(), abstol=1e-12, reltol=1e-12, callback=cb) # solve the problem
+    sol = solve(prob, Vern9(), abstol=1e-12, reltol=1e-12, callback=cb) # solve the problem
     x = sol.u[end][1:6] # final state
     t = sol.t[end] # final time
     Φ = reshape(sol.u[end][7:42],6,6) # final STM

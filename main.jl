@@ -36,14 +36,14 @@ x₀ = rv2pq(rv₀) # initial condition of halo orbit (normally at apoapsis)
 w₀ = [x₀; reshape(Φ₀,36,1)] # Reshape the matrix into a vector and append it to the state vector
 tspan = (0.,T₀) # integrate from 0 to T₀
 prob_halo = ODEProblem(CR3BPstmBar!,w₀,tspan,μ) # CR3BPstm! is our in-place dynamics function for state and STM
-halo = solve(prob_halo,TsitPap8(),abstol=1e-12,reltol=1e-12) # solve the problem
+halo = solve(prob_halo,Vern9(),abstol=1e-12,reltol=1e-12) # solve the problem
 
 # # # We'll integrate the halo orbit and its state transition matrix (STM)
 # Φ₀ = I(6) # Initialization of the STM, Φ₀ = I
 # w₀ = [rv₀; reshape(Φ₀,36,1)] # Reshape the matrix into a vector and append it to the state vector
 # tspan = (0.,T₀) # integrate from 0 to T₀
 # prob_halo = ODEProblem(CR3BPstm!,w₀,tspan,μ) # CR3BPstm! is our in-place dynamics function for state and STM
-# halo = solve(prob_halo,TsitPap8(),abstol=1e-12,reltol=1e-12) # solve the problem
+# halo = solve(prob_halo,Vern9(),abstol=1e-12,reltol=1e-12) # solve the problem
 
 # write trajectory to CSV file
 halo_df = DataFrame(halo, [:t, :q1, :q2, :q3, :p1, :p2, :p3, :Phi11, :Phi12, :Phi13, :Phi14, :Phi15, :Phi16, :Phi21, :Phi22, :Phi23, :Phi24, :Phi25, :Phi26, :Phi31, :Phi32, :Phi33, :Phi34, :Phi35, :Phi36, :Phi41, :Phi42, :Phi43, :Phi44, :Phi45, :Phi46, :Phi51, :Phi52, :Phi53, :Phi54, :Phi55, :Phi56, :Phi61, :Phi62, :Phi63, :Phi64, :Phi65, :Phi66])
@@ -83,7 +83,7 @@ idx2_vec = []
 uidx = 0
 @time for (idx1, θ₁) in enumerate(θ)
     for (idx2, θ₂) in enumerate(θ)
-        uidx += 1
+        global uidx += 1
         u[uidx,:] = α*(cos(θ₁)*real(V[:,eig_idx1]) - sin(θ₁)*imag(V[:,eig_idx1])) + β*(cos(θ₂)*real(V[:,eig_idx2]) - sin(θ₂)*imag(V[:,eig_idx2])) # Initial guess for the invariant circle
         u[uidx,:] += x
         push!(idx1_vec, idx1)
