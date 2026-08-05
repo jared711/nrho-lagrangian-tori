@@ -263,7 +263,9 @@ int main(int argc, char *argv[])
     /* If the initial torus is not invariant, we shold uncomment the following line: */
     conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_CR3BP,normal0_CR3BP);
 
-    conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_CR3BP,normal0_CR3BP);
+    // REMOVED duplicate kam_torus() call that was causing error to increase instead of decrease
+    // due to compounding Fourier truncation from clean(paramF) on line 601
+    // conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_CR3BP,normal0_CR3BP);
 
     // return 0;
 
@@ -326,14 +328,33 @@ int main(int argc, char *argv[])
 
     /**** START Continuation with respect to epsilon ****/
     int fail = 0;
+    int cont_step = 0;
+    const int MAX_CONT_STEPS = 10;  // Maximum number of continuation steps
+    const double MAX_EPSILON = 0.01; // Maximum value of epsilon to continue
     do
     {
         paramR = paramR0;
         paramF = paramF0;
         epsilon = epsilon0 + deps;
 
+        // Check continuation termination criteria
+        if (epsilon > MAX_EPSILON) {
+            cout << "# Reached maximum epsilon = " << epsilon << " (limit: " << MAX_EPSILON << ")" << endl;
+            cout << "# Terminating continuation." << endl;
+            fail = 1;
+            break;
+        }
+        if (cont_step >= MAX_CONT_STEPS) {
+            cout << "# Reached maximum continuation steps = " << cont_step << " (limit: " << MAX_CONT_STEPS << ")" << endl;
+            cout << "# Terminating continuation." << endl;
+            fail = 1;
+            break;
+        }
+        cont_step++;
+
         /**** START Newton method to correct the invariant torus ****/
-        cout << "# We try to compute the torus for epsilon=" << epsilon << endl;
+        cout << "# Continuation step " << cont_step << " / " << MAX_CONT_STEPS << endl;
+        cout << "# We try to compute the torus for epsilon=" << epsilon << " (limit: " << MAX_EPSILON << ")" << endl;
         iter = 0;
         do
         {
