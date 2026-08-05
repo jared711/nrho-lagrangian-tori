@@ -1,5 +1,65 @@
+# Editor files
 *~
-.vscode
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+build/*.o
+build/*.so
+build/*.a
+
+# Executables
+bin/param
+bin/*
+
+# Output files
+output/*
+!output/.gitkeep
+!output/README.md
+
+# Results/logs (keep for now, might want to version control some)
+# results/*.txt
+# results/*.log
+
+# Temporary files
+*.tmp
+mypoint.txt
+
+# Old dated files
 240506*
-*.o
-param
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+.ipynb_checkpoints/
+
+# LaTeX
+docs/paper/*.aux
+docs/paper/*.log
+docs/paper/*.bbl
+docs/paper/*.blg
+docs/paper/*.out
+docs/paper/*.toc
+docs/paper/*.lof
+docs/paper/*.lot
+docs/paper/*.fls
+docs/paper/*.fdb_latexmk
+docs/paper/*.synctex.gz
+docs/paper/*.bcf
+docs/paper/*.run.xml
+docs/paper/paper.pdf
+
+# Python (if used for analysis)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.venv/
+venv/
