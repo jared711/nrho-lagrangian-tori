@@ -4,7 +4,7 @@
 # Usage:
 #   julia --project=. src/julia/qpo_visualization.jl <outprefix> <nrevs> <torus1> [<torus2> ...]
 # The tori are output_torus files written by bin/param. The NRHO (the fixed point of the section
-# map) is read from results/families/nrho_id97/nrho_fixed_point.txt.
+# map) is read from results/families/nrho_id<NRHO_ID>/nrho_fixed_point.txt (env NRHO_ID, default 97; or NRHO_FIXED).
 
 using LinearAlgebra, Printf, OrdinaryDiffEq, Plots, ThreeBodyProblem
 gr()
@@ -16,8 +16,11 @@ const R_ENCELADUS_KM = 252.1
 const SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]   # validated categorical slots (light)
 const INK = "#3d3d3a"
 
+"""readlines that also accepts gzip-compressed files (.gz)."""
+readlines_any(path) = endswith(path, ".gz") ? readlines(`gzip -dc $path`) : readlines(path)
+
 function read_output_torus(path)
-    L = readlines(path)
+    L = readlines_any(path)
     h = parse.(Float64, L[1:12])
     n1, n2 = Int(h[9]), Int(h[10])
     K = zeros(n1, n2, 4)
@@ -65,8 +68,9 @@ end
 function main(args)
     outprefix, nrevs = args[1], parse(Float64, args[2])
     files = args[3:end]
-    fp = vec(parse.(Float64, split(read(joinpath(@__DIR__, "..", "..", "results", "families", "nrho_id97",
-                                             "nrho_fixed_point.txt"), String))))
+    nrho_id = get(ENV, "NRHO_ID", "97")
+    fpfile = get(ENV, "NRHO_FIXED", joinpath(@__DIR__, "..", "..", "results", "families", "nrho_id" * nrho_id, "nrho_fixed_point.txt"))
+    fp = vec(parse.(Float64, split(read(fpfile, String))))
     zfix, H, mu, Tnrho = fp[1:4], fp[5], fp[6], fp[7]
     tn, Rn = trajectory_km(section_to_state(zfix, H, mu), mu, Tnrho; npts=40000)
 
@@ -89,7 +93,7 @@ function main(args)
 
     # 1. 3D view: NRHO, the largest QPO, Enceladus
     big = qpos[end]
-    p1 = plot(Rn[:, 1], Rn[:, 2], Rn[:, 3]; color=INK, lw=1.5, label="NRHO (Id 97)",
+    p1 = plot(Rn[:, 1], Rn[:, 2], Rn[:, 3]; color=INK, lw=1.5, label="NRHO (Id $nrho_id)",
               xlabel="x [km]", ylabel="y [km]", zlabel="z [km]", size=(700, 620),
               title=@sprintf("QPO on a torus of radius %.1f km (%d revolutions)", big.radius, round(Int, nrevs)), common...)
     plot!(p1, big.R[:, 1], big.R[:, 2], big.R[:, 3]; color=SERIES[1], lw=0.4, alpha=0.6, label="QPO")

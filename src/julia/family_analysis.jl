@@ -15,9 +15,12 @@ const LU_KM = 238042.0   # Saturn-Enceladus distance (km), the length unit of th
 const SERIES = ["#2a78d6", "#eb6834"]
 const INK = "#3d3d3a"
 
+"""readlines that also accepts gzip-compressed files (.gz)."""
+readlines_any(path) = endswith(path, ".gz") ? readlines(`gzip -dc $path`) : readlines(path)
+
 """Read an output_torus file written by param: 12 header lines, then `i1 i2 q1 q2 p1 p2`."""
 function read_output_torus(path)
-    L = readlines(path)
+    L = readlines_any(path)
     h = parse.(Float64, L[1:12])
     n1, n2 = Int(h[9]), Int(h[10])
     K = zeros(n1, n2, 4)
@@ -31,7 +34,7 @@ end
 """Error of invariance of each accepted torus, from the lines `eps n1 n2 twist s1 s2 error` of the log."""
 function accepted_errors(logfile)
     errs = Dict{Float64,Float64}()
-    for line in readlines(logfile)
+    for line in readlines_any(logfile)
         v = split(line)
         length(v) == 7 || continue
         x = tryparse.(Float64, v)
@@ -43,7 +46,7 @@ end
 
 function branch_table(dir)
     files = filter(f -> startswith(f, "output_torus"), readdir(dir))
-    logf = isfile(joinpath(dir, "run.log")) ? joinpath(dir, "run.log") : joinpath(dir, "fam.log")
+    logf = first(filter(isfile, joinpath.(dir, ["run.log", "run.log.gz", "fam.log"])))
     errs = accepted_errors(logf)
     rows = []
     for f in files
@@ -77,7 +80,7 @@ function main(args)
 
     # 1. Family in frequency space
     p1 = plot(; xlabel="rotation number ρ₁", ylabel="rotation number ρ₂",
-              title="Family of Lagrangian tori around NRHO Id 97", common...)
+              title="Family of Lagrangian tori around NRHO Id $(get(ENV, "NRHO_ID", "97"))", common...)
     for (i, (lab, rows)) in enumerate(tables)
         plot!(p1, [r.omega1 for r in rows], [r.omega2 for r in rows]; label=lab, color=SERIES[i],
               lw=2, marker=:circle, ms=3, msw=0)
