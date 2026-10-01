@@ -38,6 +38,7 @@ Changes to BCN-KAM code inside `param.cc`:
 * AI-2026-10 (`f83e8f0`): `kam_torus()` prints diagnostics after each step: the residual of the linearized equation, the Lagrangian defect, and the symplectic-frame check. `3c7ad63`: also the averaged torsion ⟨T⟩.
 * AI-2026-10: `map_twist()`, `gform_identity()` and the `--test-twist` mode, an integrable twist map that validates `kam_torus()` on Cartesian (non-lifted) tori.
 * AI-2026-10: the Newton loop in `main()` uses Case 2 (metric frame) in place of Case 1.
+* AI-2026-10: both `kam_torus()` calls for the CR3BP use `gform_identity()` (the Euclidean metric in local coordinates) instead of `gform_CR3BP()`.
 
 Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 * `80585d6`: STM index order in `map_CR3BP()`.

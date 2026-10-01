@@ -399,11 +399,11 @@ int main(int argc, char *argv[])
     cout << "# zscale: " << zscale << endl;
 
     /* If the initial torus is not invariant, we shold uncomment the following line: */
-    conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_CR3BP,normal0_CR3BP);
+    conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_identity,normal0_CR3BP);
 
     // REMOVED duplicate kam_torus() call that was causing error to increase instead of decrease
     // due to compounding Fourier truncation from clean(paramF) on line 601
-    // conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_CR3BP,normal0_CR3BP);
+    // conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_identity,normal0_CR3BP);
 
     // return 0;
 
@@ -497,7 +497,7 @@ int main(int argc, char *argv[])
         do
         {
             cout << "# Iteration " << iter + 1 << " : " << endl;
-            conv = kam_torus(paramR, paramF, omega, error, nn, nelem, tail0, tails, 2, map_CR3BP, sform_CR3BP, gform_CR3BP, normal0_CR3BP); // Case 2: Case 1 (constant N0) is not transversal for tori around an elliptic point
+            conv = kam_torus(paramR, paramF, omega, error, nn, nelem, tail0, tails, 2, map_CR3BP, sform_CR3BP, gform_identity, normal0_CR3BP); // Case 2: Case 1 (constant N0) is not transversal for tori around an elliptic point
             // conv = kam_torus(paramR, paramF, omega, error, nn, nelem, tail0, tails, 1, map_standard, sform_standard, gform_standard, normal0_standard);
             // conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,3,map_froeschle,sform_froeschle,gform_froeschle);
             if (tail0 == 1)
