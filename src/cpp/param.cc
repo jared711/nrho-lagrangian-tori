@@ -134,6 +134,7 @@ myreal *lambda; // Fixed parameters or constants
 myreal epsilon; // Continuation parameter
 int map_failures = 0; // Number of failed Poincare map evaluations since last check
 int free_frequency = 0; // 1: Newton corrects omega and fixes the average normal correction (--free-omega)
+myreal tolfloor = 1e-10; // accept a stalled Newton iteration if its best error is below this (physical, --tol-floor)
 
 /* The torus is solved in local coordinates zeta, z = zcen + Mloc zeta, where z = (q1,q2,p1,p2)
    are the physical section coordinates and the columns of Mloc are the first-harmonic axes of
@@ -188,6 +189,8 @@ int main(int argc, char *argv[])
     for (int i = 2; i < argc; i++)
         if (strcmp(argv[i], "--free-omega") == 0)
             free_frequency = 1;
+        else if (strcmp(argv[i], "--tol-floor") == 0 && i + 1 < argc)
+            tolfloor = atof(argv[++i]);
 
     cout << scientific;
     cout.precision(15);
@@ -625,10 +628,49 @@ int main(int argc, char *argv[])
         cout << "# Continuation step " << cont_step << " / " << MAX_CONT_STEPS << endl;
         cout << "# We try to compute the torus for epsilon=" << epsilon << " (limit: " << MAX_EPSILON << ")" << endl;
         iter = 0;
+        /* Stall detection: the error of the map evaluation sets a floor below which Newton cannot go;
+           once there, further steps only amplify that noise through the small divisors. We keep the
+           best torus seen and stop when a step fails to halve the error. The best torus is accepted
+           as converged if its error is below tolfloor (physical units, --tol-floor). */
+        double best_error = DBL_MAX, prev_error = DBL_MAX;
+        matrix bestR, bestF;
+        myreal best_omega[DTOR];
         do
         {
             cout << "# Iteration " << iter + 1 << " : " << endl;
+            matrix entryR = paramR, entryF = paramF;
+            myreal entry_omega[DTOR];
+            for (int i = 0; i < DTOR; i++)
+                entry_omega[i] = omega[i];
             conv = kam_torus(paramR, paramF, omega, error, nn, nelem, tail0, tails, 2, map_CR3BP, sform_CR3BP, gform_identity, normal0_CR3BP); // Case 2: Case 1 (constant N0) is not transversal for tori around an elliptic point
+            if (conv == 0 && tail0 == 0)
+            {
+                if (error < best_error)
+                {
+                    best_error = error;
+                    bestR = entryR;
+                    bestF = entryF;
+                    for (int i = 0; i < DTOR; i++)
+                        best_omega[i] = entry_omega[i];
+                }
+                if (error > 0.5 * prev_error)
+                {
+                    paramR = bestR;
+                    paramF = bestF;
+                    for (int i = 0; i < DTOR; i++)
+                        omega[i] = best_omega[i];
+                    error = best_error;
+                    conv = (best_error * zscale < tolfloor) ? 1 : 0;
+                    cout << "# Newton stalled; best error " << best_error * zscale << " (physical), "
+                         << (conv ? "accepted" : "not accepted") << " (tol-floor " << tolfloor << ")" << endl;
+                    if (conv == 0)
+                        conv = -1;
+                    break;
+                }
+                prev_error = error;
+            }
+            if (tail0 == 1)
+                best_error = prev_error = DBL_MAX; // the grid changes: restart the stall detection
             // conv = kam_torus(paramR, paramF, omega, error, nn, nelem, tail0, tails, 1, map_standard, sform_standard, gform_standard, normal0_standard);
             // conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,3,map_froeschle,sform_froeschle,gform_froeschle);
             if (tail0 == 1)
