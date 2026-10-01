@@ -64,3 +64,9 @@ Running log of the solver work, newest last. Commit hashes refer to this repo. S
 * Outer edge: around 14.7 km the attainable error rises (~1e-11 on 128×128; a run with tol-floor 3e-11 advanced only Δε ≈ 0.006). The floor grows with grid size (more small divisors amplifying map noise), so this is a limit of the section-map formulation at these sizes. Candidates to push further: tighter map evaluation (e.g. higher-order or extended-precision integration), or the flow-map/multiple-shooting formulation of Haro–Mondelo.
 * Speed: OpenMP map evaluation (`9eebd24`, 9.4× on 12 threads) and -O2 (`68a61af`, 3×).
 * Fixes: refinement only within 100× of tol-floor (`dc74b4d`); grid-size guard (`fea7958`).
+
+### Update: five families (2026-10-02)
+* `family_pipeline.jl` (`b9fa65e`) sets up any elliptic member; the member scan is in `results/families/elliptic_members_scan.txt`.
+* New families (`5af21c0`): Id 23 (74 tori, 2.7–9.6 km, min QPO altitude +21.0 km), Id 37 (55 tori, 4.1–12.3 km, +15.6 km), Id 85 (75 tori, 1.0–12.3 km, +3.6 km).
+* Paper (`8f91e65`): five-family table filled (Ids 23, 37, 53, 85, 97); distinct tori counts; true medians (`e8c58e3`). 19 pages; needs trimming to the venue's page limit.
+* Common pattern: outward branches end at the ~1e-11 error floor on 128×128 (radius 9.6–14.7 km); the useful torus size is set by the perilune altitude.
