@@ -78,14 +78,14 @@ using namespace std;
 // #define DMAP (2)    // Dimension of phase space
 // #define NPAR (0)    // Number of (constant) parameters in the map
 // #define MNEW (10)   // Maximum number of Newton iterations
-// #define MAXF (8192) // Maximum number of Fourier coefficients allowed
+// #define MAXF (16384) // Maximum number of Fourier coefficients allowed (128 x 128)
 
 // CR3BP map
 #define DTOR (2)    // Dimension of the invariant torus because I'm doing the generator of the full lagrangian torus
 #define DMAP (4)    // Dimension of phase space (5/8/24, we've reduced the dimnsion to 4 because we're constraining C and y=0 with a Poincare map)
 #define NPAR (2)    // Number of (constant) parameters in the map
 #define MNEW (10)   // Maximum number of Newton iterations
-#define MAXF (8192) // Maximum number of Fourier coefficients allowed
+#define MAXF (16384) // Maximum number of Fourier coefficients allowed (128 x 128)
 
 int position(int *nn, int *index, int ndim);
 void indices(int pos, int *nn, int *index, int ndim);
@@ -734,7 +734,7 @@ int main(int argc, char *argv[])
                     for (int i = 0; i < DTOR; i++)
                         best_omega[i] = entry_omega[i];
                 }
-                if (error > 0.9 * prev_error && best_error >= tolfloor && best_error < 100.0 * tolfloor && 2 * nelem <= MAXF && !refined_on_stall)
+                if (error > 0.9 * prev_error && best_error >= tolfloor && best_error < 100.0 * tolfloor && 4 * nelem <= MAXF && !refined_on_stall)
                 {
                     /* Stalled above tol-floor but within 100x of it (a truncation floor; a stall far
                        above it is a predictor that left the basin, handled by halving the step):
