@@ -654,14 +654,9 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     KshiftF = shift(paramF, omega);
     KshiftR = fft_B(KshiftF);
 
-    for (int l = 0; l < nelem; l++)
-    {
-        indices(l, nn, index, DTOR);
-        for (int i = 0; i < DTOR; i++)
-        {
-            KshiftR.coef[i][0].elem[l] = KshiftR.coef[i][0].elem[l] + ((double)index[i]) / ((double)nn[i]) + omega[i];
-        }
-    }
+    /* The torus lives in Cartesian coordinates (q1,q2,p1,p2), so K is fully
+       periodic: no theta+omega lift is added to the first DTOR components
+       (that lift is only for tori in angle-action coordinates, e.g. Froeschle). */
 
     ErrorR = FparamR - KshiftR;
 
