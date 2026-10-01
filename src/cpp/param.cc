@@ -713,6 +713,7 @@ int main(int argc, char *argv[])
            best torus seen and stop when a step fails to reduce the error by 10%. The best torus is accepted
            as converged if its error is below tolfloor (physical units, --tol-floor). */
         double best_error = DBL_MAX, prev_error = DBL_MAX;
+        int refined_on_stall = 0;
         matrix bestR, bestF;
         myreal best_omega[DTOR];
         do
@@ -732,6 +733,26 @@ int main(int argc, char *argv[])
                     bestF = entryF;
                     for (int i = 0; i < DTOR; i++)
                         best_omega[i] = entry_omega[i];
+                }
+                if (error > 0.9 * prev_error && best_error >= tolfloor && 2 * nelem <= MAXF && !refined_on_stall)
+                {
+                    /* Stalled above tol-floor: with the low-pass filter the tail test cannot trigger
+                       refinement, so do it here (Haro & Mondelo 2021, Alg. 3.6.1, step 5: if the error
+                       is too large, double N), from the best torus, at the same epsilon. */
+                    paramR = bestR;
+                    paramF = bestF;
+                    for (int i = 0; i < DTOR; i++)
+                    {
+                        omega[i] = best_omega[i];
+                        newnn[i] = 2 * nn[i];
+                    }
+                    realloc_torus(paramR, paramF, paramR0, paramF0, nelem, nn, newnn);
+                    have_prev = 0;
+                    refined_on_stall = 1;
+                    best_error = prev_error = DBL_MAX;
+                    cout << "# Newton stalled above tol-floor; refining the grid to " << nn[0] << " x " << nn[1] << endl;
+                    iter++;
+                    continue;
                 }
                 if (error > 0.9 * prev_error)
                 {
