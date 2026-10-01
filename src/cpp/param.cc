@@ -126,6 +126,7 @@ void state2ham(double state[]);
 myreal pi, pi2, val0, val05, val1, val2, val3, val4, val5, val10;
 myreal global_twist; // Norm of inverse of torsion matrix T(theta)
 myreal toltail;      // Tolerance on the size of the tails of the parameterization
+myreal toltail_phys; // toltail as read from the input file (physical units)
 myreal tolinva;      // Tolerance on the error of invariance
 myreal tolinte;      // Tolerance on intermediate computation (e.g. matrix inverses)
 
@@ -140,6 +141,7 @@ myreal eps_max = 0.01;                  // continuation stops beyond this epsilo
 int max_cont_steps = 10;                // maximum number of continuation steps (--max-steps)
 int lowpass_filter = 1;                 // zero the upper half of the DFT after each Newton step (--no-filter)
 int project_real = 1;                   // drop imaginary parts of K after each step (--no-real)
+int rebuild_frame = 1;                  // rebuild the local frame after each accepted continuation step (--fixed-frame)
 
 /* The torus is solved in local coordinates zeta, z = zcen + Mloc zeta, where z = (q1,q2,p1,p2)
    are the physical section coordinates and the columns of Mloc are the first-harmonic axes of
@@ -158,6 +160,149 @@ int invert4(myreal A[DMAP][DMAP], myreal Ainv[DMAP][DMAP]);
 fstream file_torus, file_input;
 
 #define N RTBPHP_N
+
+/* Build the local coordinates z = zcen + Mloc zeta from the first harmonics of a torus given in
+   physical coordinates (paramR) and convert paramR to them (paramF is recomputed). Also sets
+   Minv, Omega_loc and zscale. See the comment at the call in main(). */
+void build_local_frame(matrix &paramR, matrix &paramF, int *nn, int nelem)
+{
+    paramF = fft_F(paramR); // the frame is read from the spectrum of the physical torus
+    for (int i = 0; i < DMAP; i++)
+        zcen[i] = paramF.coef[i][0].elem[0].real;
+    zscale = 0.0;
+    for (int i = 0; i < DMAP; i++)
+        for (int l = 0; l < nelem; l++)
+            zscale = fmax(zscale, fabs(paramR.coef[i][0].elem[l].real - zcen[i]));
+    {
+        /* First harmonics: K(theta) ~ zcen + sum_j a_j cos(2 pi theta_j) + b_j sin(2 pi theta_j),
+           with a_j = 2 Re K_{e_j}, b_j = -2 Im K_{e_j}. Columns of Mloc: a_1 a_2 b_1 b_2. */
+        int pos1 = nn[1]; // index (1,0): position 1 * nn[1] + 0
+        int pos2 = 1;     // index (0,1)
+        for (int i = 0; i < DMAP; i++)
+        {
+            Mloc[i][0] = 2.0 * paramF.coef[i][0].elem[pos1].real;
+            Mloc[i][1] = 2.0 * paramF.coef[i][0].elem[pos2].real;
+            Mloc[i][2] = -2.0 * paramF.coef[i][0].elem[pos1].imag;
+            Mloc[i][3] = -2.0 * paramF.coef[i][0].elem[pos2].imag;
+        }
+        /* Symplectic normalization of each pair (a_j, b_j): scale so that a_j^T Omega b_j = -1, the
+           value of e_q^T Omega e_p for the standard form. Omega_loc is then close to the standard
+           form. Afterwards all columns are multiplied by a common factor sym_scale = sqrt(mean action)
+           so that the circles of the torus have radius ~1 in zeta and every quantity in kam_torus
+           (L, N, T, eta) is O(1): the grid utilities use absolute tolerances (tolgrid in
+           cohomological() and clean(), tolqr in inv()), which fail for a torus of size ~1e-5.
+           The form is divided by sym_scale^2 accordingly (a constant multiple of a symplectic form
+           is preserved by the same maps). */
+        double sym_scale = 0.0;
+        {
+            double Om0[DMAP][DMAP] = {{0, 0, -1, 0}, {0, 0, 0, -1}, {1, 0, 0, 0}, {0, 1, 0, 0}};
+            for (int j = 0; j < DTOR; j++)
+            {
+                double w = 0.0;
+                for (int k = 0; k < DMAP; k++)
+                    for (int m = 0; m < DMAP; m++)
+                        w += Mloc[k][j] * Om0[k][m] * Mloc[m][j + DTOR];
+                if (w == 0.0)
+                    continue;
+                sym_scale += fabs(w) / DTOR;
+                double sa = 1.0 / sqrt(fabs(w)), sb = (w > 0) ? -sa : sa;
+                for (int k = 0; k < DMAP; k++)
+                {
+                    Mloc[k][j] *= sa;
+                    Mloc[k][j + DTOR] *= sb;
+                }
+            }
+            sym_scale = sqrt(sym_scale);
+            if (sym_scale > 0.0)
+                for (int k = 0; k < DMAP; k++)
+                    for (int j = 0; j < DMAP; j++)
+                        Mloc[k][j] *= sym_scale;
+            else
+                sym_scale = 1.0;
+        }
+        if (!invert4(Mloc, Minv))
+        {
+            cout << "# First-harmonic matrix is singular; using isotropic scaling" << endl;
+            for (int i = 0; i < DMAP; i++)
+                for (int j = 0; j < DMAP; j++)
+                {
+                    Mloc[i][j] = (i == j) ? zscale : 0.0;
+                    Minv[i][j] = (i == j) ? 1.0 / zscale : 0.0;
+                }
+        }
+        double Om[DMAP][DMAP] = {{0, 0, -1, 0}, {0, 0, 0, -1}, {1, 0, 0, 0}, {0, 1, 0, 0}};
+        for (int i = 0; i < DMAP; i++)
+            for (int j = 0; j < DMAP; j++)
+            {
+                Omega_loc[i][j] = 0.0;
+                for (int k = 0; k < DMAP; k++)
+                    for (int m = 0; m < DMAP; m++)
+                        Omega_loc[i][j] += Mloc[k][i] * Om[k][m] * Mloc[m][j];
+                Omega_loc[i][j] /= sym_scale * sym_scale;
+            }
+        /* zscale converts local lengths to physical ones: |dz| <~ zscale |dzeta| */
+        zscale = 0.0;
+        for (int j = 0; j < DMAP; j++)
+        {
+            double c = 0.0;
+            for (int i = 0; i < DMAP; i++)
+                c += Mloc[i][j] * Mloc[i][j];
+            zscale = fmax(zscale, sqrt(c));
+        }
+        cout << "# Omega_loc:";
+        for (int i = 0; i < DMAP; i++)
+            for (int j = 0; j < DMAP; j++)
+                cout << " " << Omega_loc[i][j];
+        cout << endl;
+    }
+    for (int l = 0; l < nelem; l++)
+    {
+        double dz[DMAP];
+        for (int i = 0; i < DMAP; i++)
+            dz[i] = paramR.coef[i][0].elem[l].real - zcen[i];
+        for (int i = 0; i < DMAP; i++)
+        {
+            double v = 0.0;
+            for (int j = 0; j < DMAP; j++)
+                v += Minv[i][j] * dz[j];
+            paramR.coef[i][0].elem[l] = v;
+        }
+    }
+    paramF = fft_F(paramR);
+    cout << "# zcen: " << zcen[0] << " " << zcen[1] << " " << zcen[2] << " " << zcen[3] << endl;
+    cout << "# zscale: " << zscale << endl;
+}
+
+/* Convert a torus on the grid between local (zeta) and physical (z) coordinates of the current frame. */
+void local_to_physical(matrix &R, int nelem)
+{
+    for (int l = 0; l < nelem; l++)
+    {
+        complex zeta[DMAP], z[DMAP];
+        for (int i = 0; i < DMAP; i++)
+            zeta[i] = R.coef[i][0].elem[l];
+        to_physical(zeta, z);
+        for (int i = 0; i < DMAP; i++)
+            R.coef[i][0].elem[l] = z[i];
+    }
+}
+
+void physical_to_local(matrix &R, int nelem)
+{
+    for (int l = 0; l < nelem; l++)
+    {
+        double dz[DMAP];
+        for (int i = 0; i < DMAP; i++)
+            dz[i] = R.coef[i][0].elem[l].real - zcen[i];
+        for (int i = 0; i < DMAP; i++)
+        {
+            double v = 0.0;
+            for (int j = 0; j < DMAP; j++)
+                v += Minv[i][j] * dz[j];
+            R.coef[i][0].elem[l] = v;
+        }
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -209,6 +354,8 @@ int main(int argc, char *argv[])
             lowpass_filter = 0;
         else if (strcmp(argv[i], "--no-real") == 0)
             project_real = 0;
+        else if (strcmp(argv[i], "--fixed-frame") == 0)
+            rebuild_frame = 0;
 
     cout << scientific;
     cout.precision(15);
@@ -217,6 +364,7 @@ int main(int argc, char *argv[])
     file_input.open(argv[1], ios::in);
     file_input << scientific;
     file_input >> toltail; // tolerance of the tail from eq. 4.104
+    toltail_phys = toltail;
     cout << "#toltail: " << toltail << endl;
     file_input >> tolinva; //
     cout << "#tolinva: " << tolinva << endl;
@@ -446,112 +594,9 @@ int main(int argc, char *argv[])
        with Mloc built from its first harmonics. In zeta the torus is close to a product of round
        circles, so L^T L is nearly constant and the normal frame N is well resolved on the grid.
        The change is linear, so the form stays constant: Omega_loc = Mloc^T Omega Mloc. */
-    for (int i = 0; i < DMAP; i++)
-        zcen[i] = paramF.coef[i][0].elem[0].real;
-    zscale = 0.0;
-    for (int i = 0; i < DMAP; i++)
-        for (int l = 0; l < nelem; l++)
-            zscale = fmax(zscale, fabs(paramR.coef[i][0].elem[l].real - zcen[i]));
-    {
-        /* First harmonics: K(theta) ~ zcen + sum_j a_j cos(2 pi theta_j) + b_j sin(2 pi theta_j),
-           with a_j = 2 Re K_{e_j}, b_j = -2 Im K_{e_j}. Columns of Mloc: a_1 a_2 b_1 b_2. */
-        int pos1 = nn[1]; // index (1,0): position 1 * nn[1] + 0
-        int pos2 = 1;     // index (0,1)
-        for (int i = 0; i < DMAP; i++)
-        {
-            Mloc[i][0] = 2.0 * paramF.coef[i][0].elem[pos1].real;
-            Mloc[i][1] = 2.0 * paramF.coef[i][0].elem[pos2].real;
-            Mloc[i][2] = -2.0 * paramF.coef[i][0].elem[pos1].imag;
-            Mloc[i][3] = -2.0 * paramF.coef[i][0].elem[pos2].imag;
-        }
-        /* Symplectic normalization of each pair (a_j, b_j): scale so that a_j^T Omega b_j = -1, the
-           value of e_q^T Omega e_p for the standard form. Omega_loc is then close to the standard
-           form. Afterwards all columns are multiplied by a common factor sym_scale = sqrt(mean action)
-           so that the circles of the torus have radius ~1 in zeta and every quantity in kam_torus
-           (L, N, T, eta) is O(1): the grid utilities use absolute tolerances (tolgrid in
-           cohomological() and clean(), tolqr in inv()), which fail for a torus of size ~1e-5.
-           The form is divided by sym_scale^2 accordingly (a constant multiple of a symplectic form
-           is preserved by the same maps). */
-        double sym_scale = 0.0;
-        {
-            double Om0[DMAP][DMAP] = {{0, 0, -1, 0}, {0, 0, 0, -1}, {1, 0, 0, 0}, {0, 1, 0, 0}};
-            for (int j = 0; j < DTOR; j++)
-            {
-                double w = 0.0;
-                for (int k = 0; k < DMAP; k++)
-                    for (int m = 0; m < DMAP; m++)
-                        w += Mloc[k][j] * Om0[k][m] * Mloc[m][j + DTOR];
-                if (w == 0.0)
-                    continue;
-                sym_scale += fabs(w) / DTOR;
-                double sa = 1.0 / sqrt(fabs(w)), sb = (w > 0) ? -sa : sa;
-                for (int k = 0; k < DMAP; k++)
-                {
-                    Mloc[k][j] *= sa;
-                    Mloc[k][j + DTOR] *= sb;
-                }
-            }
-            sym_scale = sqrt(sym_scale);
-            if (sym_scale > 0.0)
-                for (int k = 0; k < DMAP; k++)
-                    for (int j = 0; j < DMAP; j++)
-                        Mloc[k][j] *= sym_scale;
-            else
-                sym_scale = 1.0;
-        }
-        if (!invert4(Mloc, Minv))
-        {
-            cout << "# First-harmonic matrix is singular; using isotropic scaling" << endl;
-            for (int i = 0; i < DMAP; i++)
-                for (int j = 0; j < DMAP; j++)
-                {
-                    Mloc[i][j] = (i == j) ? zscale : 0.0;
-                    Minv[i][j] = (i == j) ? 1.0 / zscale : 0.0;
-                }
-        }
-        double Om[DMAP][DMAP] = {{0, 0, -1, 0}, {0, 0, 0, -1}, {1, 0, 0, 0}, {0, 1, 0, 0}};
-        for (int i = 0; i < DMAP; i++)
-            for (int j = 0; j < DMAP; j++)
-            {
-                Omega_loc[i][j] = 0.0;
-                for (int k = 0; k < DMAP; k++)
-                    for (int m = 0; m < DMAP; m++)
-                        Omega_loc[i][j] += Mloc[k][i] * Om[k][m] * Mloc[m][j];
-                Omega_loc[i][j] /= sym_scale * sym_scale;
-            }
-        /* zscale converts local lengths to physical ones: |dz| <~ zscale |dzeta| */
-        zscale = 0.0;
-        for (int j = 0; j < DMAP; j++)
-        {
-            double c = 0.0;
-            for (int i = 0; i < DMAP; i++)
-                c += Mloc[i][j] * Mloc[i][j];
-            zscale = fmax(zscale, sqrt(c));
-        }
-        cout << "# Omega_loc:";
-        for (int i = 0; i < DMAP; i++)
-            for (int j = 0; j < DMAP; j++)
-                cout << " " << Omega_loc[i][j];
-        cout << endl;
-    }
-    for (int l = 0; l < nelem; l++)
-    {
-        double dz[DMAP];
-        for (int i = 0; i < DMAP; i++)
-            dz[i] = paramR.coef[i][0].elem[l].real - zcen[i];
-        for (int i = 0; i < DMAP; i++)
-        {
-            double v = 0.0;
-            for (int j = 0; j < DMAP; j++)
-                v += Minv[i][j] * dz[j];
-            paramR.coef[i][0].elem[l] = v;
-        }
-    }
-    paramF = fft_F(paramR);
-    toltail /= zscale; // tolerances in the input file are in physical units
+    build_local_frame(paramR, paramF, nn, nelem);
+    toltail = toltail_phys / zscale; // tolerances in the input file are in physical units
     // tolinva stays in physical units: the error of invariance is measured in physical coordinates
-    cout << "# zcen: " << zcen[0] << " " << zcen[1] << " " << zcen[2] << " " << zcen[3] << endl;
-    cout << "# zscale: " << zscale << endl;
 
     /* No Newton step here: the Newton loop below starts from the input torus. A step taken here
        (as in the original code) would be stored in paramR0 below, so every continuation step and
@@ -796,6 +841,25 @@ int main(int argc, char *argv[])
             }
             file_torus.close();
             /**** END   We save the computed invariant torus in a separated file ****/
+
+            /* Rebuild the local frame from the torus just accepted: the first-harmonic coordinates
+               are only adapted to the torus they were built from, and along the family the torus
+               changes shape. A run restarted from a torus where the continuation had stalled
+               (frame built at epsilon = 0) converged again once the frame was rebuilt. The
+               predictor history is re-expressed in the new frame. */
+            if (rebuild_frame)
+            {
+                local_to_physical(paramR0, nelem);
+                if (have_prev)
+                    local_to_physical(paramRm1, nelem);
+                build_local_frame(paramR0, paramF0, nn, nelem);
+                toltail = toltail_phys / zscale;
+                if (have_prev)
+                {
+                    physical_to_local(paramRm1, nelem);
+                    paramFm1 = fft_F(paramRm1);
+                }
+            }
         }
         else
         {
