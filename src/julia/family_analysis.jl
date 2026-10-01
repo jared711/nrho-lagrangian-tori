@@ -132,6 +132,6 @@ function main(args)
     end
 end
 
-median_(v) = isempty(v) ? NaN : sort(v)[cld(length(v), 2)]
+median_(v) = isempty(v) ? NaN : (s = sort(v); n = length(s); isodd(n) ? s[(n + 1) ÷ 2] : (s[n ÷ 2] + s[n ÷ 2 + 1]) / 2)
 
 main(ARGS)
