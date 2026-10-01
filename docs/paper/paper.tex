@@ -2,8 +2,10 @@
 %% NOTE: the SIAM class (siamart220329.cls) is not installed on this machine, so this draft
 %% uses the standard article class. Swap in the SIAM template (\documentclass{siamart220329},
 %% \headers, \author with \thanks, etc.) before submission.
-%% Every number below comes from the git log, docs/WORKLOG.md, results/families/nrho_id97/*
-%% or figures/family_id97/id97_table.csv. Items marked TODO need input from the author.
+%% Every number below comes from the git log, docs/WORKLOG.md, results/families/nrho_id53/*,
+%% results/families/nrho_id97/*, results/families/elliptic_members_scan.txt, or
+%% figures/family_id{53,97}/id{53,97}_table.csv. Items marked TODO need input from the author.
+%% Revised 2026-10-01: Results rewritten around the NRHO Id 53 family.
 
 \documentclass[11pt]{article}
 
@@ -47,10 +49,15 @@ family, scale-free thresholds, an invariance error measured in the sup norm in p
 low-pass filtering, stall detection at the noise floor of the map, and grid refinement. We
 verify the solver on an integrable twist map with exact tori, where it converges quadratically,
 and on the CR3BP, where one Newton step reduces the invariance error of an orbit-fitted torus
-from $1.12\times10^{-10}$ to $5.37\times10^{-13}$ length units (LU). Continuation in the rotation
-vector produces a family of 141 tori around NRHO Id~97 of our NRHO data set, with radii from
-$0.67$ to $9.4$~km on the section and median invariance errors of $3.8\times10^{-13}$ and
-$6.0\times10^{-13}$~LU on the two branches (about $0.1$~mm).
+from $1.12\times10^{-10}$ to $5.37\times10^{-13}$ length units (LU). A scan of the elliptic NRHO members shows that their perilune altitude above
+Enceladus falls from $28$~km to below the surface as the orbits approach the moon, so the choice
+of member matters. Continuation in the rotation vector produces a family of 114 tori around NRHO
+Id~53 (perilune $17.1$~km), with radii from $1.35$ to $14.7$~km on the section, median invariance
+errors of $4.5\times10^{-13}$ and $1.6\times10^{-12}$~LU on its two branches and a maximum of
+$9.9\times10^{-12}$~LU (about $2$~mm); the quasi-periodic orbits of its largest torus stay at
+least $8.9$~km above the surface. Around NRHO Id~97, numerically just as well behaved but with a
+perilune of only $4.2$~km, the larger tori of a 144-torus family ($0.67$ to $9.4$~km) impact
+Enceladus.
 \end{abstract}
 
 %% ============================================================================
@@ -64,7 +71,8 @@ the CR3BP \cite{davis2018saturnian}. Near-rectilinear halo orbits (NRHOs), the m
 $L_1$/$L_2$ halo families that pass close to the smaller primary, have been studied extensively in
 the Earth--Moon system \cite{zimovan2017nrho,zimovanspreen2020,whitley2016options}, where some of
 them are nearly stable. In the Saturn--Enceladus system the corresponding NRHOs are short-period
-orbits (about $11.6$~h for the orbit used below) with a close passage over Enceladus.
+orbits (about $11.6$~h for NRHO Id~97 below) with a close passage over Enceladus, a few to a few
+tens of kilometres above its surface.
 
 Around a linearly stable periodic orbit, KAM theory predicts a Cantor family of invariant tori
 carrying quasi-periodic orbits (QPOs) \cite{kolmogorov1954,arnold1963proof,moser1962}. QPOs
@@ -102,8 +110,12 @@ with three frequencies (two frequencies and the return time). The contributions 
   $\T^d\times\R^d$ (\cref{sec:practical,sec:lessons}).
 \item A verification suite: Jacobian and symplecticity checks, an integrable twist map with exact
   tori, and a free-frequency test (\cref{sec:verification}).
-\item A family of 141 tori around a nearly stable Saturn--Enceladus NRHO, with radii from $0.67$
-  to $9.4$~km and invariance errors at the level of $10^{-13}$~LU (\cref{sec:results}).
+\item A scan of the elliptic NRHO members by perilune altitude and distance to low-order
+  resonances, used to select the members to compute (\cref{sec:scan}).
+\item A family of 114 tori around NRHO Id~53, with radii from $1.35$ to $14.7$~km and invariance
+  errors of $10^{-13}$ to $10^{-11}$~LU, whose quasi-periodic orbits stay at least $8.9$~km above
+  Enceladus; and, for contrast, a family of 144 tori around the lower NRHO Id~97, whose larger
+  tori impact Enceladus (\cref{sec:results}).
 \end{itemize}
 \todo{Check whether QPOs around Saturn--Enceladus NRHOs have been computed before, and adjust
 the wording of the contribution list accordingly.}
@@ -285,7 +297,10 @@ is $10^{-12}$~LU.
 \paragraph{Grid refinement.} If Newton stalls above $\epsilon_{\mathrm{floor}}$, the torus is
 interpolated to a grid twice as fine in each direction (zero padding) and Newton continues, once
 per loop. This is step 5 of \cite[Alg.~3.6.1, p.~30]{haromondelo2021flow}: ``if
-$\mathrm{err}(T')>\varepsilon_1$, double $N$''.
+$\mathrm{err}(T')>\varepsilon_1$, double $N$''. We refine only if the best error is within a
+factor $100$ of $\epsilon_{\mathrm{floor}}$; stalls farther above it, which occur when a
+continuation predictor has left the basin of convergence, are handled by halving the
+continuation step instead. The largest grid is $128\times128$.
 
 \paragraph{Continuation.} We continue tori at fixed energy in the rotation vector
 \cite[Sec.~3.5, Alg.~3.5.4]{haromondelo2021flow}, along a straight line
@@ -369,7 +384,7 @@ consistent at a time when the quasi-Newton solver still diverged.
 %% ============================================================================
 \section{Results}\label{sec:results}
 
-\subsection{Choice of the NRHO}
+\subsection{First targets: NRHO Id~72 and Id~97}\label{sec:choice}
 Our first target, NRHO Id~72 of our data set (period $0.4895$~days), is elliptic-elliptic but
 close to a $1{:}2$ resonance: $\rho_1-2\rho_2 = -0.0040$ at the fixed point. The frequency map of
 its neighborhood shows that orbits with amplitude $a_1\gtrsim2\times10^{-5}$~LU along the first
@@ -383,18 +398,56 @@ $\rho^{\mathrm{lin}} = (0.3539576, 0.1943036)$ give $\rho_1-2\rho_2 = -0.0347$, 
 farther from the $1{:}2$ resonance. Its fixed point on $\Sigma$ is
 $z^* = (-1.000283097, -0.001895716, -0.000925503, -1.007691126)$ at energy
 $h = -1.50001746408344$ (Jacobi constant $3.00003492816688$); it lies about $456$~km from the center
-of Enceladus. \todo{Describe the scan of elliptic NRHO members by distance to low-order resonances
-that led to Id~97 (not recorded in the repository), and add a frequency-map figure.}
-\todo{Perilune and impact (measured 2026-10-01, Julia, Vern9, tolerance 1e-13): the perilune of NRHO Id~97 is
-$256.3$~km from the center of Enceladus, i.e.\ only $4.2$~km above the $252.1$~km mean radius. Minimum QPO altitudes over
-30 revolutions: $+3.4$~km (torus radius $1.5$~km), $+1.7$ ($4.8$), $+1.1$ ($6.1$), $+0.8$ ($6.9$), $-0.2$~km ($9.4$), so tori
-larger than about $9$~km impact Enceladus. Along the elliptic part of the NRHO data set the perilune altitude decreases with
-Id (Id 23: $25.8$, 53: $17.1$, 73: $11.3$, 85: $7.8$, 97: $4.2$~km; Id $\ge 113$ below the surface). Decide whether to
-feature Id~53 (resonance distance $0.017$) as the mission-relevant member.}
-\todo{Id~53 family computed (results/families/nrho\_id53, figures/family\_id53, figures/qpo3d/id53\_*): 114 tori, radius $1.35$--$14.7$~km, sup error median $4.5\times10^{-13}$ / $1.6\times10^{-12}$, max $9.9\times10^{-12}$~LU; largest QPOs at least $8.9$~km above the surface. Outer edge near $14.7$~km set by the rising error floor on $128\times128$ grids. Rewrite Results around Id~53 (and keep Id~97 as the low-perilune contrast).}
+of Enceladus. Numerically, Id~97 is well conditioned, and the method was developed and verified
+on it (\cref{sec:newton,sec:id97}). Physically it is a poor choice: integrating the NRHO in the
+full flow (Julia, Vern9, tolerance $10^{-13}$), its perilune is $256.3$~km from the center of
+Enceladus, only $4.2$~km above the $252.1$~km mean radius. This led us to scan the whole family.
+\todo{Add a frequency-map figure (Id~72 or Id~53).}
 
-\subsection{Newton convergence on the CR3BP}
-The start torus is orbit-fitted (\cref{sec:guess}) with amplitudes $(4\times10^{-5},4\times10^{-5})$~LU,
+\subsection{Selecting NRHO members: perilune altitude and resonances}\label{sec:scan}
+For every elliptic-elliptic member of the $L_2$ NRHO table with Id~$\le 111$ (odd Ids) we computed
+the period, the perilune altitude above the $252.1$~km mean radius of Enceladus, the linear
+rotation numbers, and the nearest resonance $k\cdot\rho^{\mathrm{lin}} = n$ with $|k|_1\le 6$,
+together with its distance $|k\cdot\rho^{\mathrm{lin}} - n|$. \Cref{tab:scan} shows a selection.
+Two trends constrain the choice. First, the perilune altitude falls monotonically with Id, from
+$28.1$~km (Id~15) to $0.2$~km (Id~111); members with Id~$\ge 113$ pass below the surface. Second,
+the resonance distance does not vary monotonically: some members sit almost on a low-order
+resonance (Id~15 at $10^{-4}$ from $k=(-2,-4)$, Id~59 at $6\times10^{-4}$ from $k=(-2,-2)$, Id~71
+and Id~109 at a few $10^{-3}$), while others are separated from the nearest one by $10^{-2}$ or
+more (Id~53 at $0.017$, Id~85 and Id~97 at $0.022$ and $0.027$). We therefore chose members that
+span the perilune altitudes and avoid near resonances: Ids~23, 37, 53, 85 and 97. Id~53 has a
+perilune of $17.1$~km, the largest resonance distance among the members above $10$~km, and a
+frequency map that is regular (drift $\sim5\times10^{-10}$) up to amplitudes
+$(8\times10^{-5},8\times10^{-5})$~LU; it is our main example.
+
+\begin{table}[t]
+\centering
+\caption{Representative elliptic members of the NRHO table: period $T$, perilune altitude above
+the mean radius of Enceladus, linear rotation numbers, and the nearest resonance with $|k|_1\le6$
+and its distance $|k\cdot\rho^{\mathrm{lin}}-n|$. Source:
+\nolinkurl{results/families/elliptic_members_scan.txt}.}
+\label{tab:scan}
+\small
+\begin{tabular}{rcrccr}
+\toprule
+Id & $T$ (TU) & perilune alt.\ (km) & $\rho^{\mathrm{lin}}$ & nearest $k$ & distance \\
+\midrule
+15  & 2.2824 & 28.1 & $(0.336354, 0.081847)$ & $(-2,-4)$ & 0.0001 \\
+23  & 2.2760 & 25.8 & $(0.336377, 0.101653)$ & $(-3,0)$  & 0.0091 \\
+37  & 2.2648 & 21.8 & $(0.337056, 0.128252)$ & $(-3,0)$  & 0.0112 \\
+53  & 2.2516 & 17.1 & $(0.339096, 0.152183)$ & $(-3,0)$  & 0.0173 \\
+59  & 2.2468 & 15.4 & $(0.340223, 0.159501)$ & $(-2,-2)$ & 0.0006 \\
+71  & 2.2368 & 11.8 & $(0.343322, 0.172841)$ & $(-1,2)$  & 0.0024 \\
+85  & 2.2253 &  7.8 & $(0.348321, 0.185508)$ & $(-4,2)$  & 0.0223 \\
+97  & 2.2153 &  4.2 & $(0.353958, 0.194304)$ & $(-4,2)$  & 0.0272 \\
+109 & 2.2053 &  0.7 & $(0.360906, 0.201352)$ & $(-5,-1)$ & 0.0059 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Newton convergence on the CR3BP}\label{sec:newton}
+For NRHO Id~97 the start torus is orbit-fitted (\cref{sec:guess}) with amplitudes
+$(4\times10^{-5},4\times10^{-5})$~LU,
 on a $32\times32$ grid, with rotation numbers $\omega_s = (0.35372425999973, 0.19383759358522)$.
 \Cref{tab:newton} shows its Newton history and those of the next two continuation steps. The
 first step from the orbit fit reduces the error by more than two orders of magnitude, to
@@ -407,6 +460,11 @@ $\avg{T} = \left(\begin{smallmatrix}-1.337\times10^{-5} & -1.118\times10^{-4}\\
 $\det\avg{T} = -1.30\times10^{-8}$, comparable to the square of its largest entry, so the twist
 condition is comfortably satisfied. The nearest resonance $k\cdot\omega\in\Z$ with $|k|\le 12$ at the
 start torus is $k=(-1,7)$, with $|k\cdot\omega - 1| \approx 3\times10^{-3}$.
+For NRHO Id~53 the start torus is built the same way (amplitudes $(4\times10^{-5},4\times10^{-5})$~LU,
+$32\times32$, $\omega_s = (0.3393830664659, 0.1526113801869)$), and one Newton step takes its error
+from $8.1\times10^{-12}$ to $6.9\times10^{-13}$~LU. The same construction, now automated, accepted
+amplitude $4\times10^{-5}$~LU for NRHOs Id~23, 37 and 85, with rotation-number drifts of
+$1.1\times10^{-9}$, $2.0\times10^{-9}$ and $4.5\times10^{-10}$.
 
 \begin{table}[t]
 \centering
@@ -425,8 +483,106 @@ $\varepsilon=-0.047$ (predictor)      & $3.233\times10^{-9}$  & $6.024\times10^{
 \end{tabular}
 \end{table}
 
-\subsection{A family of tori around NRHO Id~97}
-We continue along $\omega(\varepsilon) = \omega_s + \varepsilon\Delta\omega$ with
+\subsection{A family of tori around NRHO Id~53}\label{sec:id53}
+NRHO Id~53 has period $2.2516$~TU and energy $h = -1.50001738952906$; its fixed point on $\Sigma$,
+$z^* = (-1.000318177, -0.001977028, -0.000852904, -1.007444102)$, lies about $477$~km from the
+center of Enceladus, and its linear rotation numbers are
+$\rho^{\mathrm{lin}} = (0.3390958, 0.1521835)$. We continue along
+$\omega(\varepsilon) = \omega_s + \varepsilon\Delta\omega$ with
+$\Delta\omega = \omega_s - \rho^{\mathrm{lin}} = (2.8729\times10^{-4}, 4.2791\times10^{-4})$, so
+again $\varepsilon=-1$ is the NRHO, with tolerance floor $10^{-11}$~LU. The family was computed in
+six consecutive runs, three per direction, each restarting from the last torus of the previous one:
+\begin{itemize}
+\item inward: cumulative $\varepsilon$ from $0$ to $-0.932$ (the detuning reduced to $7\%$),
+  68 tori, radius from $5.7$ down to $1.35$~km. The last run stopped when the continuation step fell
+  below its minimum, with errors of about $10^{-11}$;
+\item outward: cumulative $\varepsilon$ from $0$ to $3.486$, 46 tori, radius from $5.7$ up to
+  $14.7$~km, with automatic refinement from $32\times32$ to $64\times64$ and $128\times128$. The last
+  run stopped at errors of about $10^{-11}$ on $128\times128$ (\cref{sec:limitations}).
+\end{itemize}
+Of the 114 tori, 35 are on $32\times32$ grids, 14 on $64\times64$ and 65 on $128\times128$; 109 are
+distinct, the others being the start torus and the tori at which runs were joined. They cover
+$\rho_2\in[0.15221, 0.15410]$ (\cref{fig:freq}) and radii of $1.35$ to $14.7$~km in $(q_1,q_2)$
+(\cref{fig:size,fig:section}). The sup error of invariance has median $4.5\times10^{-13}$~LU on the
+inward branch and $1.6\times10^{-12}$~LU on the outward branch, and maximum $9.9\times10^{-12}$~LU,
+about $2.4$~mm (\cref{fig:error}). As for Id~97 (\cref{sec:id97}), the radius grows like
+$\sqrt{\rho_2-\rho^{\mathrm{lin}}_2}$ near the NRHO (\cref{fig:size}), and the error is smallest on
+the middle part of the family and rises towards both ends.
+
+\begin{figure}[t]
+\centering
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{id53_frequencies.png}
+\caption{The family of Lagrangian tori around NRHO Id~53 in rotation-number space. Each marker is
+a converged torus; the diamond is the pair of linear rotation numbers of the NRHO.}
+\label{fig:freq}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{id53_size.png}
+\caption{Torus radius in $(q_1,q_2)$ on the section (maximum distance from the center of the
+torus, km) along the Id~53 family.}
+\label{fig:size}
+\end{minipage}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{id53_section.png}
+\caption{The smallest, a middle and the largest torus of the Id~53 family on the section $q_3=0$,
+projected to $(q_1,q_2)$ relative to the fixed point $z^*$, on a common scale. Each dot is a grid
+point of $K$.}
+\label{fig:section}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.6\textwidth]{id53_error.png}
+\caption{Sup-norm error of invariance \eqref{eq:err} of each accepted torus of the Id~53 family,
+in LU ($10^{-12}$~LU $\approx 0.24$~mm).}
+\label{fig:error}
+\end{figure}
+
+\subsection{Quasi-periodic orbits in configuration space}\label{sec:qpo}
+To see the tori as trajectories, we integrate the full three-degree-of-freedom flow (Julia,
+Vern9, tolerance $10^{-13}$) from a point of a torus and convert the trajectory to
+Enceladus-centered coordinates of the rotating frame. \Cref{fig:qpo3d} shows the QPO of the
+largest Id~53 torus (radius $14.7$~km) over 30 revolutions: it stays in a thin tube around the
+NRHO. \Cref{fig:qpodist} shows the distance to the NRHO over 30 periods for the tori of radius
+$1.35$, $5.7$ and $14.7$~km, and \cref{fig:apolune} the crossings of the plane $y=0$ near apolune
+over 300 revolutions, relative to the NRHO's crossing: cross-sections of the QPO tubes, which
+fill out as the torus grows. Over the 30 revolutions the QPO of the largest torus comes no closer
+than $261.0$~km to the center of Enceladus, i.e.\ it stays at least $8.9$~km above the mean
+surface.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.65\textwidth]{id53_3d.png}
+\caption{The QPO of the largest torus of the Id~53 family (radius $14.7$~km on the section) over
+30 revolutions, the NRHO, and Enceladus (wireframe, radius $252.1$~km), in Enceladus-centered
+rotating coordinates with equal axis scales.}
+\label{fig:qpo3d}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{id53_distance.png}
+\caption{Distance from QPOs of three Id~53 tori (radius $1.35$, $5.7$ and $14.7$~km on the
+section) to the NRHO (nearest point of the densely sampled periodic orbit) over 30 NRHO periods.}
+\label{fig:qpodist}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{id53_apolune.png}
+\caption{Crossings of the plane $y=0$ near apolune over 300 revolutions, relative to the crossing of
+NRHO Id~53, for the same three tori as in \cref{fig:qpodist}.}
+\label{fig:apolune}
+\end{figure}
+
+\subsection{Contrast: the family around NRHO Id~97}\label{sec:id97}
+For NRHO Id~97 we continue along $\omega(\varepsilon) = \omega_s + \varepsilon\Delta\omega$ with
 $\Delta\omega = \omega_s - \rho^{\mathrm{lin}} = (-2.3333\times10^{-4},-4.6605\times10^{-4})$, the
 amplitude-frequency detuning of the start torus. Then $\varepsilon=-1$ is the NRHO itself
 (``inward''), and $\varepsilon>0$ gives larger tori (``outward''). The family was computed in four
@@ -447,69 +603,73 @@ consecutive runs:
 \end{itemize}
 The runs produced 144 converged tori, of which 141 are distinct (three tori appear in two
 consecutive runs: the start torus and the two tori at which runs were joined). They cover
-$\rho_2\in[0.19263, 0.19429]$ (\cref{fig:freq}) and radii of $0.67$ to $9.4$~km in $(q_1,q_2)$
-(\cref{fig:size,fig:section}). The sup error of invariance has median $3.8\times10^{-13}$~LU on the
-inward branch and $6.0\times10^{-13}$~LU on the outward branch, and maximum $1.0\times10^{-11}$~LU
-(\cref{fig:error}); $4\times10^{-13}$~LU is about $0.1$~mm. Near the NRHO the radius grows like
+$\rho_2\in[0.19263, 0.19429]$ and radii of $0.67$ to $9.4$~km in $(q_1,q_2)$
+(\cref{fig:size97}). The sup error of invariance has median $3.8\times10^{-13}$~LU on the
+inward branch and $6.0\times10^{-13}$~LU on the outward branch, and maximum $1.0\times10^{-11}$~LU;
+$4\times10^{-13}$~LU is about $0.1$~mm. Near the NRHO the radius grows like
 $\sqrt{\rho^{\mathrm{lin}}_2-\rho_2}$, as expected for a detuning that is linear in the action.
 The largest errors occur where a branch approached the limit of its grid, before refinement.
 
-\begin{figure}[t]
-\centering
-\begin{minipage}[t]{0.49\textwidth}
-\centering
-\includegraphics[width=\textwidth]{id97_frequencies.png}
-\caption{The family of Lagrangian tori around NRHO Id~97 in rotation-number space. Each marker is
-a converged torus; the diamond is the pair of linear rotation numbers of the NRHO.}
-\label{fig:freq}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.49\textwidth}
-\centering
-\includegraphics[width=\textwidth]{id97_size.png}
-\caption{Torus radius in $(q_1,q_2)$ on the section (maximum distance from the center of the
-torus, km) along the family.}
-\label{fig:size}
-\end{minipage}
-\end{figure}
+Numerically this family is as good as the Id~53 one, but physically it is limited by the low
+perilune. Over 30 revolutions the QPOs of the tori of radius $0.67$, $4.8$ and $9.4$~km stay
+within $0.67$, $4.6$ and $8.8$~km of the NRHO, and their minimum altitudes above the mean surface
+are $+3.4$~km (torus radius $1.5$~km), $+1.7$~km ($4.8$), $+1.1$~km ($6.1$), $+0.8$~km ($6.9$) and
+$-0.2$~km ($9.4$). Tori larger than about $9$~km therefore impact Enceladus, and for this member
+the physically meaningful part of the family ends there regardless of the numerics.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{id97_section.png}
-\caption{The smallest, a middle and the largest torus of the family on the section $q_3=0$,
-projected to $(q_1,q_2)$, on a common scale centered at the smallest torus. Each dot is a grid
-point of $K$.}
-\label{fig:section}
+\includegraphics[width=0.55\textwidth]{id97_size.png}
+\caption{Torus radius in $(q_1,q_2)$ along the Id~97 family. Tori larger than about $9$~km have
+QPOs that dip below the mean surface of Enceladus.}
+\label{fig:size97}
 \end{figure}
 
-\begin{figure}[t]
+\subsection{Summary over NRHO members}\label{sec:summary}
+\Cref{tab:families} collects the families. The perilune altitude of the NRHO bounds the size of
+useful tori: around Id~53 the QPOs of a $14.7$~km torus stay $8.9$~km above the surface, while
+around Id~97 those of a $9.4$~km torus reach $0.2$~km below it.
+
+\begin{table}[t]
 \centering
-\includegraphics[width=0.6\textwidth]{id97_error.png}
-\caption{Sup-norm error of invariance \eqref{eq:err} of each accepted torus, in LU
-($10^{-12}$~LU $\approx 0.24$~mm).}
-\label{fig:error}
-\end{figure}
-
-\begin{figure}[t]
-\centering
-% \includegraphics[width=0.8\textwidth]{qpo3d.png}
-\fbox{\parbox{0.8\textwidth}{\centering\vspace{2em}\todo{3D figure of quasi-periodic orbits in
-configuration space (being produced in \nolinkurl{figures/qpo3d/} by \nolinkurl{src/julia/qpo_visualization.jl})}\vspace{2em}}}
-\caption{\todo{Caption for the 3D QPO figure.}}
-\label{fig:qpo3d}
-\end{figure}
-
-\todo{Describe \cref{fig:qpo3d} (Fig.~TODO): the quasi-periodic orbits in configuration space,
-obtained by integrating the flow from points of the tori.}
+\caption{Families of Lagrangian tori around five NRHO members. Errors are sup-norm invariance
+errors \eqref{eq:err} in LU (median inward / outward; maximum). Minimum QPO altitude: over 30
+revolutions from the largest torus, above the $252.1$~km mean radius.}
+\label{tab:families}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{rcccccc}
+\toprule
+Id & perilune & $\rho^{\mathrm{lin}}$ & tori & radius & median / max error & min.\ QPO \\
+   & alt.\ (km) &                     &      & (km)   & (LU)               & alt.\ (km) \\
+\midrule
+23 & 25.8 & $(0.336377, 0.101653)$ & \todo{} & \todo{} & \todo{} & \todo{} \\
+37 & 21.8 & $(0.337056, 0.128252)$ & \todo{} & \todo{} & \todo{} & \todo{} \\
+53 & 17.1 & $(0.339096, 0.152183)$ & 114 & 1.35--14.7 & $4.5\mathrm{e}{-13}$ / $1.6\mathrm{e}{-12}$; $9.9\mathrm{e}{-12}$ & 8.9 \\
+85 &  7.8 & $(0.348321, 0.185508)$ & \todo{} & \todo{} & \todo{} & \todo{} \\
+97 &  4.2 & $(0.353958, 0.194304)$ & 144 & 0.67--9.4 & $3.8\mathrm{e}{-13}$ / $6.0\mathrm{e}{-13}$; $1.0\mathrm{e}{-11}$ & $-0.2$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+\todo{Fill the rows of Ids 23, 37 and 85 when their families finish (start tori in
+\nolinkurl{results/families/nrho_id23}, \nolinkurl{nrho_id37}, \nolinkurl{nrho_id85}, all accepted at amplitude $4\times10^{-5}$~LU).}
 
 \subsection{Cost}
 Each Newton step evaluates the section map and its differential at every grid point, i.e.\ $N$
-integrations of the variational equations over about one NRHO period. Evaluating the map and
-Jacobian on a $32\times32$ grid takes about $2.5$~s, and this dominates the cost of a step; the
-cohomological equations and frame construction are FFT-based and comparatively cheap. The first
-inward run (43 tori, 171 evaluations of the invariance error including rejected steps) took under
-10 minutes. \todo{Machine, compiler flags, single/multi-threaded; timing per step on $64\times64$.}
+integrations of the variational equations over about one NRHO period; this dominates the cost of
+a step, while the cohomological equations and frame construction are FFT-based and comparatively
+cheap. The evaluations are independent, and we run them in parallel with OpenMP. One Newton solve
+of the Id~97 start torus on $32\times32$ (two error evaluations and one step) takes $5.0$~s on one
+thread and $0.53$~s on 12 threads ($9.4\times$), with identical errors; compiling with
+optimization (\texttt{-O2}) reduces the single-thread time from $5.20$ to $1.76$~s ($3.0\times$),
+and the two gains multiply. A Newton step on a $32\times32$ grid therefore takes well under a
+second. On $128\times128$ grids, with $16384$ map evaluations per step, this is the difference
+between minutes and seconds. The first inward Id~97 run (43 tori, 171 evaluations of the
+invariance error including rejected steps), made with the serial, unoptimized build, took under 10
+minutes. \todo{Machine and CPU model; timing per step on $128\times128$.}
 For comparison, the dense collocation Newton step costs $O((4N)^3)$ operations and storage
 $O((4N)^2)$.
+
 
 %% ============================================================================
 \section{Discussion}\label{sec:discussion}
@@ -565,7 +725,7 @@ Newton test catch both kinds of error. None of these issues is a flaw of the met
 practical cost of moving a validated code to a problem with very different scales, and the
 diagnostics above are a cheap way to detect them.
 
-\subsection{Limitations}
+\subsection{Limitations}\label{sec:limitations}
 \begin{itemize}
 \item \emph{Map-noise floor.} Converged tori have sup errors of about $4\times10^{-13}$~LU. The
   spectrum of $E$ shows a broadband floor of about $10^{-14}$ per coefficient, plus peaks at the
@@ -574,6 +734,21 @@ diagnostics above are a cheap way to detect them.
   tolerance or the section tolerance beyond that. The exact source of the remaining floor in the
   map evaluation is not yet characterized. \todo{Characterize the floor (e.g., by comparing with an
   extended-precision or Taylor integrator).}
+\item \emph{Numerical edge of the Id~53 family.} The outer end of the Id~53 family near $14.7$~km
+  is numerical, not dynamical. There the attainable error rises to about $10^{-11}$~LU on
+  $128\times128$ grids, the tolerance floor, and a run with a floor three times larger
+  ($3\times10^{-11}$~LU) advanced only $\Delta\varepsilon\approx0.006$. The floor grows with the
+  grid size, because finer grids have more small divisors that amplify the map noise, so grid
+  refinement cannot push past it: this is a limit of the section-map formulation at these sizes.
+  More accurate map evaluation (e.g.\ higher-order or extended-precision integration), or the
+  flow-map/multiple-shooting formulation of Haro and Mondelo \cite{haromondelo2021flow}, which
+  shortens the integration intervals, are the candidates to extend the family.
+\item \emph{Physical edge: impact.} For low-perilune members the family ends physically before
+  it ends numerically. Around NRHO Id~97 (perilune $4.2$~km) tori larger than about $9$~km have
+  QPOs that pass below the mean surface of Enceladus, and members with Id~$\ge113$ have
+  perilunes below it. The scan of \cref{sec:scan} is therefore part of the method for this
+  problem: perilune altitude, as well as resonance distance, decides which members are worth
+  continuing. Altitudes here are measured from the $252.1$~km mean radius.
 \item \emph{Resonances.} The line in $\omega$ crosses resonances densely; numerically only
   low-order ones with small divisors on the grid matter. Near the $1{:}2$ resonance (NRHO Id~72)
   the method is not applicable to the resonant tori, which are not Lagrangian KAM tori with the
@@ -587,14 +762,14 @@ diagnostics above are a cheap way to detect them.
   integration intervals, which may help near the close passage of the NRHO over Enceladus. A flow-map version of this framework
   \cite{haromondelo2021flow,fernandezmora2024siads,fernandezmora2026convergence} is a natural next
   step.
-\item \emph{Extent of the family.} The inward branch stopped at $2\%$ of the original detuning on
-  $32\times32$, before automatic refinement existed, and the outward branch stopped at its
-  prescribed limit $\varepsilon = 2.60$ (radius $9.4$~km). \todo{Report the end point of the
-  extended outward branch (currently running) and whether it is limited by resonances, the grid,
-  or the loss of the elliptic character of the tori.}
+\item \emph{Extent of the Id~97 family.} The inward branch stopped at $2\%$ of the original
+  detuning on $32\times32$, before automatic refinement existed, and the outward branch stopped at
+  its prescribed limit $\varepsilon = 2.60$ (radius $9.4$~km), which is already beyond the impact
+  boundary. \todo{Report the end point of the far-outward Id~97 run (was still running), or drop
+  it, since those tori impact Enceladus.}
 \item \emph{Stability information.} We have not yet computed the linear stability of the tori
-  (the tangent and normal bundles beyond the frame), nor their mission-relevant properties
-  (minimum altitude, eclipse, station-keeping cost). \todo{Decide whether to include any of
+  (the tangent and normal bundles beyond the frame), nor mission-relevant properties beyond the
+  minimum altitude (eclipse, station-keeping cost). \todo{Decide whether to include any of
   these for the conference version.}
 \end{itemize}
 
@@ -607,14 +782,23 @@ finite differences and an independent dense Newton solver. With torus-adapted sy
 coordinates, scale-free thresholds, a sup-norm error, low-pass filtering, stall detection and grid
 refinement, the quasi-Newton step converges from orbit-fitted guesses to the noise floor of the
 Poincar\'e map in one to three steps, at $O(N\log N)$ cost plus $N$ map evaluations per step.
-Continuation in the rotation vector produced a family of 141 tori around NRHO Id~97, with radii
-from $0.67$ to $9.4$~km on the section and median errors of a few $10^{-13}$~LU (about $0.1$~mm).
-Next steps are the extension of the family, a flow-map formulation with multiple shooting, the
-stability of the tori, and their use in mission design for an Enceladus orbiter.
+Along the elliptic NRHO members the perilune altitude falls from $28$~km to below the surface, so
+members must be selected by perilune altitude as well as by distance to low-order resonances.
+Continuation in the rotation vector produced a family of 114 tori around NRHO Id~53 (perilune
+$17.1$~km), with radii from $1.35$ to $14.7$~km on the section, median errors of
+$4.5\times10^{-13}$ and $1.6\times10^{-12}$~LU and a maximum of $9.9\times10^{-12}$~LU; its QPOs
+stay at least $8.9$~km above Enceladus. Its outer edge is numerical, set by the map-noise floor on
+$128\times128$ grids. Around NRHO Id~97 (perilune $4.2$~km) a family of 144 tori, from $0.67$ to
+$9.4$~km, is equally accurate, but its tori larger than about $9$~km impact Enceladus. Next steps
+are the families around NRHOs Id~23, 37 and 85, more accurate map evaluation or a flow-map
+formulation with multiple shooting to extend the families, the stability of the tori, and their
+use in mission design for an Enceladus orbiter.
 
 \paragraph{Code and data availability.} \todo{Repository URL (github.com/jared711/nrho-lagrangian-tori?),
 license (the RTBP library is LGPL v3 or later), and the commit used for the results; the tori,
-run logs and commands are in \nolinkurl{results/families/nrho_id97/}.}
+run logs and commands are in \nolinkurl{results/families/nrho_id53/} and
+\nolinkurl{results/families/nrho_id97/}, and the member scan in
+\nolinkurl{results/families/elliptic_members_scan.txt}.}
 
 \section*{Acknowledgments}
 The author thanks \`Alex Haro (Universitat de Barcelona) and Josep-Maria Mondelo (Universitat
