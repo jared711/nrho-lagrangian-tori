@@ -179,3 +179,47 @@ function fit_torus(pts, rho, M, n)
     end
     return K, residual
 end
+
+"""
+    map_noise(input_file, z, v; hs) -> Vector of (h, defect)
+
+Smoothness test of the section map along direction v: the second-order defect
+|P(z+hv) - 2P(z) + P(z-hv)| / h^2 should be constant (≈ |D²P(v,v)|) for a smooth
+map. It grows like noise/h^2 once h is small enough that integration noise dominates.
+"""
+function map_noise(input_file, z, v; hs=10.0 .^ (-3:-0.5:-9))
+    P0 = run_orbit(input_file, z, 1)[1][1, :]
+    out = Tuple{Float64,Float64}[]
+    for h in hs
+        Pp = run_orbit(input_file, z + h * v, 1)[1][1, :]
+        Pm = run_orbit(input_file, z - h * v, 1)[1][1, :]
+        push!(out, (h, norm(Pp - 2P0 + Pm)))
+    end
+    return out
+end
+
+"""
+    frequency_map(input_file, zfix, V, amps1, amps2; niter=2048)
+
+Laskar-style frequency map: for each pair of amplitudes (a1, a2) start at
+zfix + a1 Re V1 + a2 Re V2, iterate the map, and measure the rotation numbers with
+`refined_rotation_numbers` on the whole orbit. Also returns a regularity indicator:
+the max change of the rotation numbers between the first and second halves of the
+orbit (small for orbits on KAM tori, large for chaotic or escaping ones; Inf if the
+map failed).
+"""
+function frequency_map(input_file, zfix, V, amps1, amps2; niter=2048)
+    rho = fill(NaN, length(amps1), length(amps2), 2)
+    diff = fill(Inf, length(amps1), length(amps2))
+    for (i, a1) in enumerate(amps1), (j, a2) in enumerate(amps2)
+        pts, _ = run_orbit(input_file, zfix + a1 * real(V[:, 1]) + a2 * real(V[:, 2]), niter)
+        size(pts, 1) < niter && continue
+        h = niter ÷ 2
+        r = refined_rotation_numbers(pts, zfix, V)
+        r1 = refined_rotation_numbers(pts[1:h, :], zfix, V)
+        r2 = refined_rotation_numbers(pts[h+1:end, :], zfix, V)
+        rho[i, j, :] = r
+        diff[i, j] = maximum(abs.(r1 - r2))
+    end
+    return rho, diff
+end
