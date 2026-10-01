@@ -1027,6 +1027,18 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     OmegaKF = fft_F(OmegaKR);
     OmegaKshiftF = shift(OmegaKF, omega);
     OmegaKshiftR = fft_B(OmegaKshiftF);
+    if (Case == 2)
+    {
+        /* N(theta + omega) from the frame formula applied pointwise to L(theta + omega), the metric
+           and the form at K(theta + omega), instead of Fourier-shifting N: N contains
+           B = (L^T G L)^-1, whose spectrum decays more slowly than that of L, so shifting it
+           on the grid is less accurate than shifting L. */
+        matrix MetricKshiftR = fft_B(shift(fft_F(MetricKR), omega));
+        matrix GRs = trans(LshiftR) * MetricKshiftR * LshiftR;
+        matrix BRs = inv(GRs);
+        matrix ARs = trans(BRs) * trans(LshiftR) * MetricKshiftR * inv(OmegaKshiftR) * MetricKshiftR * LshiftR * BRs * val05;
+        NshiftR = LshiftR * ARs - inv(OmegaKshiftR) * MetricKshiftR * LshiftR * BRs;
+    }
     etaLR = -trans(NshiftR) * OmegaKshiftR * ErrorR;
     etaNR = trans(LshiftR) * OmegaKshiftR * ErrorR;
     twistR = trans(NshiftR) * OmegaKshiftR * DFKR * NR;
