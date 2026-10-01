@@ -106,6 +106,10 @@ void map_standard(complex *z, complex *fz, complex **Dfz, complex *depfz);
 void sform_standard(complex *z, complex **Omegaz);
 void gform_standard(complex *z, complex **Metricz);
 void normal0_standard(matrix &N0, int *nn, int nelem);
+void map_twist(complex *z, complex *fz, complex **Dfz, complex *depfz);
+void gform_identity(complex *z, complex **Metricz);
+extern double twist_rho[2];
+extern double twist_b[2][2];
 
 /* functions created by Jared Blanchard May, 2024*/
 void nu(complex *z, double *x, double (*Dnu)[4]);
@@ -286,6 +290,41 @@ int main(int argc, char *argv[])
                 zc[i] = f0[i];
                 cout << zc[i].real << (i < DMAP - 1 ? " " : "\n");
             }
+        }
+        return 0;
+    }
+
+    /* Validation mode: Newton iterations of kam_torus on the integrable twist map map_twist,
+       starting from a perturbed exact torus. Uses the grid size and tolerances of the input file.
+       Usage: param input.csv --test-twist [Case] */
+    if (argc > 2 && strcmp(argv[2], "--test-twist") == 0)
+    {
+        int tcase = (argc > 3) ? atoi(argv[3]) : 2;
+        double Istar[2] = {0.01, 0.02};
+        for (int j = 0; j < 2; j++)
+            omega[j] = twist_rho[j] + twist_b[j][0] * Istar[0] + twist_b[j][1] * Istar[1];
+        cout << "# twist test: omega = " << omega[0] << " " << omega[1] << ", Case " << tcase << endl;
+        cout << "# exact <T> = 2 pi b (up to the frame normalization)" << endl;
+        for (int l = 0; l < nelem; l++)
+        {
+            indices(l, nn, index, DTOR);
+            double th[2] = {(double)index[0] / nn[0], (double)index[1] / nn[1]};
+            for (int j = 0; j < 2; j++)
+            {
+                double r = sqrt(2 * Istar[j] * 1.01); // 1% wrong action
+                paramR.coef[j][0].elem[l] = r * cos(pi2 * th[j]);
+                paramR.coef[j + 2][0].elem[l] = r * sin(pi2 * th[j]);
+            }
+            paramR.coef[0][0].elem[l] = paramR.coef[0][0].elem[l].real + 1e-4 * cos(pi2 * (th[0] + th[1]));
+        }
+        paramF = fft_F(paramR);
+        for (int it = 0; it < 8; it++)
+        {
+            cout << "# Newton iteration " << it + 1 << endl;
+            conv = kam_torus(paramR, paramF, omega, error, nn, nelem, tail0, tails, tcase,
+                             map_twist, sform_CR3BP, gform_identity, normal0_CR3BP);
+            if (conv != 0 || tail0 == 1)
+                break;
         }
         return 0;
     }
@@ -1383,6 +1422,56 @@ void normal0_CR3BP(matrix &N0, int *nn, int nelem)
         N0.coef[2][1].elem[l] = val0;
         N0.coef[3][1].elem[l] = val1;
     }
+}
+
+/* Integrable 4D symplectic twist map, used to validate kam_torus on Cartesian (non-lifted) tori.
+   In each plane (q_j, p_j) it rotates by phi_j = 2 pi (rho_j + sum_k b_jk I_k), with
+   I_k = (q_k^2 + p_k^2) / 2; it is the time-1 map of H = 2 pi rho.I + pi I^T b I.
+   The torus of frequency omega is K(theta)_j = sqrt(2 I*_j) (cos 2 pi theta_j, sin 2 pi theta_j)
+   with rho + b I* = omega, and its averaged torsion is known in closed form. */
+double twist_rho[2] = {0.3435, 0.1733};
+double twist_b[2][2] = {{1.0, 0.3}, {0.3, 0.5}};
+
+void map_twist(complex *z, complex *fz, complex **Dfz, complex *depfz)
+{
+    double q[2] = {z[0].real, z[1].real}, p[2] = {z[2].real, z[3].real}, I[2], phi[2];
+    for (int k = 0; k < 2; k++)
+        I[k] = 0.5 * (q[k] * q[k] + p[k] * p[k]);
+    for (int j = 0; j < 2; j++)
+        phi[j] = pi2 * (twist_rho[j] + twist_b[j][0] * I[0] + twist_b[j][1] * I[1]);
+    for (int i = 0; i < 4; i++)
+        for (int k = 0; k < 4; k++)
+            Dfz[i][k] = val0;
+    for (int j = 0; j < 2; j++)
+    {
+        double c = cos(phi[j]), s = sin(phi[j]);
+        fz[j] = c * q[j] - s * p[j];     // q_j'
+        fz[j + 2] = s * q[j] + c * p[j]; // p_j'
+        // rotation part
+        Dfz[j][j] = c;
+        Dfz[j][j + 2] = -s;
+        Dfz[j + 2][j] = s;
+        Dfz[j + 2][j + 2] = c;
+        // dependence of phi_j on (q_k, p_k): dphi_j/dq_k = 2 pi b_jk q_k, dphi_j/dp_k = 2 pi b_jk p_k
+        double dq = -s * q[j] - c * p[j], dp = c * q[j] - s * p[j]; // d(q_j', p_j')/dphi_j
+        for (int k = 0; k < 2; k++)
+        {
+            double a = pi2 * twist_b[j][k];
+            Dfz[j][k] = Dfz[j][k].real + dq * a * q[k];
+            Dfz[j][k + 2] = Dfz[j][k + 2].real + dq * a * p[k];
+            Dfz[j + 2][k] = Dfz[j + 2][k].real + dp * a * q[k];
+            Dfz[j + 2][k + 2] = Dfz[j + 2][k + 2].real + dp * a * p[k];
+        }
+    }
+    for (int i = 0; i < 4; i++)
+        depfz[i] = val0;
+}
+
+void gform_identity(complex *z, complex **Metricz)
+{
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            Metricz[i][j] = (i == j) ? val1 : val0;
 }
 
 void map_standard(complex *z, complex *fz, complex **Dfz, complex *depfz)
