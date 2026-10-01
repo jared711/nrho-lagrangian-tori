@@ -35,13 +35,14 @@ Changes to BCN-KAM code inside `param.cc`:
 * AI-2026-08 (`c52cac6`): commented out the second `kam_torus()` call and added `MAX_CONT_STEPS`/`MAX_EPSILON`. **The diagnosis behind this change was wrong.** Repeating a Newton step is correct; the error grew because of the bugs fixed in AI-2026-10.
 * AI-2026-10 (`5a16052`): removed the remaining angle lift on K(θ+ω).
 * AI-2026-10 (`6ee5174`): `kam_torus()` returns −1 when the Poincaré map failed.
-* AI-2026-10: `kam_torus()` prints diagnostics after each step: the residual of the linearized equation, the Lagrangian defect, and the symplectic-frame check.
+* AI-2026-10 (`f83e8f0`): `kam_torus()` prints diagnostics after each step: the residual of the linearized equation, the Lagrangian defect, and the symplectic-frame check.
 
 Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 * `80585d6`: STM index order in `map_CR3BP()`.
 * `c45f46c`: `get_dp3()` chain rule and index; `gform_CR3BP()` now reuses it.
 * `6ee5174`: check of the `seccp()` return value.
 * `4b6c47a`: `--fdcheck` and `--orbit` modes in `main()`.
+* AI-2026-10: local coordinates ζ = (z − z_c)/s for the CR3BP torus (`to_physical()`, `zcen`, `zscale`); `map_CR3BP()` and `gform_CR3BP()` take ζ.
 
 ## Julia (`src/julia/`)
 

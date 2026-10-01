@@ -130,6 +130,12 @@ myreal *lambda; // Fixed parameters or constants
 myreal epsilon; // Continuation parameter
 int map_failures = 0; // Number of failed Poincare map evaluations since last check
 
+/* The torus is solved in local coordinates zeta = (z - zcen) / zscale, where z = (q1,q2,p1,p2)
+   are the physical section coordinates. map_CR3BP and gform_CR3BP take zeta. */
+myreal zcen[DMAP] = {0.0, 0.0, 0.0, 0.0};
+myreal zscale = 1.0;
+void to_physical(complex *zeta, complex *z);
+
 fstream file_torus, file_input;
 
 #define N RTBPHP_N
@@ -335,6 +341,24 @@ int main(int argc, char *argv[])
     // }
     // return 0;
 
+    /* Change to local coordinates zeta = (z - zcen) / zscale centered at the average of the
+       torus and scaled by its size, so that DK, N and the torsion are O(1). The scaling is
+       conformally symplectic with a constant factor, so the same Omega is used. */
+    for (int i = 0; i < DMAP; i++)
+        zcen[i] = paramF.coef[i][0].elem[0].real;
+    zscale = 0.0;
+    for (int i = 0; i < DMAP; i++)
+        for (int l = 0; l < nelem; l++)
+            zscale = fmax(zscale, fabs(paramR.coef[i][0].elem[l].real - zcen[i]));
+    for (int i = 0; i < DMAP; i++)
+        for (int l = 0; l < nelem; l++)
+            paramR.coef[i][0].elem[l] = (paramR.coef[i][0].elem[l].real - zcen[i]) / zscale;
+    paramF = fft_F(paramR);
+    toltail /= zscale; // tolerances in the input file are in physical units
+    tolinva /= zscale;
+    cout << "# zcen: " << zcen[0] << " " << zcen[1] << " " << zcen[2] << " " << zcen[3] << endl;
+    cout << "# zscale: " << zscale << endl;
+
     /* If the initial torus is not invariant, we shold uncomment the following line: */
     conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_CR3BP,normal0_CR3BP);
 
@@ -504,8 +528,8 @@ int main(int argc, char *argv[])
                 for (int j = 0; j < DTOR; j++)
                     file_torus << index[j] << " ";
                 for (int j = 0; j < DMAP - 1; j++)
-                    file_torus << paramR.coef[j][0].elem[l].real << " ";
-                file_torus << paramR.coef[DMAP - 1][0].elem[l].real << endl;
+                    file_torus << zcen[j] + zscale * paramR.coef[j][0].elem[l].real << " ";
+                file_torus << zcen[DMAP - 1] + zscale * paramR.coef[DMAP - 1][0].elem[l].real << endl;
             }
             file_torus.close();
             /**** END   We save the computed invariant torus in a separated file ****/
@@ -747,7 +771,7 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     ErrorF = fft_F(ErrorR);
     error = norm(ErrorF);
     cout << "#     - Error of invariance: ";
-    cout << error << endl;
+    cout << error * zscale << " (physical), " << error << " (local)" << endl;
 
     if (error < tolinva)
     {
@@ -897,7 +921,7 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
         matrix dKR = LR * xiLR + NR * xiNR;
         matrix dKshiftR = fft_B(shift(fft_F(dKR), omega));
         matrix linres = DFKR * dKR - dKshiftR + ErrorR;
-        cout << "#     - Residual of the linearized equation: " << norm(fft_F(linres)) << endl;
+        cout << "#     - Residual of the linearized equation: " << norm(fft_F(linres)) * zscale << " (physical)" << endl;
         matrix symp = trans(LR) * OmegaKR * LR;
         cout << "#     - Lagrangian defect |L^T Omega L|: " << norm(fft_F(symp)) << endl;
         matrix frame = trans(LR) * OmegaKR * NR;
@@ -944,7 +968,7 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     newparamF = fft_F(newparamR);
     aux = norm(newparamF);
     cout << "#     - Norm of the correction: ";
-    cout << aux << endl;
+    cout << aux * zscale << " (physical), " << aux << " (local)" << endl;
 
     return 0;
 }
@@ -1117,6 +1141,12 @@ void nu(complex *z, double *x, double (*Dnu)[4]){
     Dnu[5][0] = dp3[0]; Dnu[5][1] = dp3[1]; Dnu[5][2] = dp3[2]; Dnu[5][3] = dp3[3];
 }
 
+void to_physical(complex *zeta, complex *z)
+{
+    for (int i = 0; i < 4; i++)
+        z[i] = complex(zcen[i] + zscale * zeta[i].real, 0.0);
+}
+
 void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
 {
     /* I'm doing a poincare map at a fixed energy level, so I have 4 DOF
@@ -1132,7 +1162,9 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     /* Todo function nu()*/
     double x[42];
     double Dnu[6][4];
-    nu(z, x, Dnu); // Does the mapping from 4D (z) to 6D (x), the extra 36 states will be filled by the STM
+    complex zphys[4];
+    to_physical(z, zphys); // z is in local coordinates (see zcen, zscale)
+    nu(zphys, x, Dnu); // Does the mapping from 4D (z) to 6D (x), the extra 36 states will be filled by the STM
     
     // Fill in the rest of the state with the STM
     for (int i = 6; i < 42; i++)
@@ -1197,6 +1229,8 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     fz[3].real = x[4]; // py
     fz[3].imag = val0;
     // p3, or x[5], is not part of my state
+    for (int i = 0; i < 4; i++) // back to local coordinates; Dfz is unchanged by the scaling
+        fz[i].real = (fz[i].real - zcen[i]) / zscale;
     /*We fill in DP with the STM, then we'll change it to be the actual differential of the Pmap by adding f_tau*Dtau */
     double DP[6][6];
     for (int i = 0; i < 6; i++)
@@ -1307,8 +1341,10 @@ void gform_CR3BP(complex *z, complex **Metricz)
 {
     // Metric induced on the section by the Euclidean metric of R^6: I + grad(p3) grad(p3)^T
     double x[6], Dnu[6][4], dp3[4];
-    nu(z, x, Dnu);
-    get_dp3(z, x[5], dp3);
+    complex zphys[4];
+    to_physical(z, zphys);
+    nu(zphys, x, Dnu);
+    get_dp3(zphys, x[5], dp3);
     double dp3dq1 = dp3[0], dp3dq2 = dp3[1], dp3dp1 = dp3[2], dp3dp2 = dp3[3];
     Metricz[0][0] = val1 + SQR(dp3dq1);
     Metricz[0][1] = val0 + dp3dq1 * dp3dq2;
