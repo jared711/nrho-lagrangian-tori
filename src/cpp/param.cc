@@ -334,6 +334,34 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    /* Evaluation mode: print F(K) and DF(K) at every grid point of the input torus
+       (physical coordinates, grid order of indices()). One line per point:
+       l F_0..F_3 DF_00 DF_01 .. DF_33 (row-major). Usage: param input.csv --eval */
+    if (argc > 2 && strcmp(argv[2], "--eval") == 0)
+    {
+        complex zc[DMAP], f0[DMAP], dep[DMAP];
+        complex *D0[DMAP];
+        for (int i = 0; i < DMAP; i++)
+            D0[i] = new complex[DMAP];
+        cout.precision(17);
+        for (int l = 0; l < nelem; l++)
+        {
+            for (int i = 0; i < DMAP; i++)
+                zc[i] = paramR.coef[i][0].elem[l];
+            map_CR3BP(zc, f0, D0, dep);
+            cout << l;
+            for (int i = 0; i < DMAP; i++)
+                cout << " " << f0[i].real;
+            for (int i = 0; i < DMAP; i++)
+                for (int j = 0; j < DMAP; j++)
+                    cout << " " << D0[i][j].real;
+            cout << endl;
+        }
+        if (map_failures > 0)
+            cout << "# map failures: " << map_failures << endl;
+        return 0;
+    }
+
     /* Verification mode: compare Dfz from map_CR3BP against central finite differences */
     if (argc > 2 && strcmp(argv[2], "--fdcheck") == 0)
     {

@@ -40,6 +40,7 @@ Changes to BCN-KAM code inside `param.cc`:
 * AI-2026-10: the Newton loop in `main()` uses Case 2 (metric frame) in place of Case 1.
 * AI-2026-10: both `kam_torus()` calls for the CR3BP use `gform_identity()` (the Euclidean metric in local coordinates) instead of `gform_CR3BP()`.
 * AI-2026-10: `--free-omega` option in `kam_torus()`: the Newton step corrects ω and fixes the average normal correction, instead of fixing ω and inverting ⟨T⟩.
+* AI-2026-10: `--eval` mode in `main()` (F and DF at every grid point, for the Julia collocation solver).
 
 Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 * `80585d6`: STM index order in `map_CR3BP()`.
@@ -54,7 +55,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 |---|---|---|
 | `main.jl`, `dynamics.jl`, `parameterization-method.jl` (first 66 lines), `util.jl` | JB-2024 (uses Jared's `ThreeBodyProblem.jl` package) | AI-2026-08: `Vern9` in place of `TsitPap8`, `global uidx`, the `terminate!` import (`f160d04`), new file paths (`7e3f235`) |
 | `parameterization-method.jl` (KAM STEP 1 port), `test_kam_torus.jl`, `README.md` | AI-2026-08 (`6d53f3c`) | |
-| `pmap_tools.jl` | AI-2026-10 | |
+| `pmap_tools.jl` (fixed points, NAFF frequency analysis, torus fitting, frequency map, dense collocation Newton) | AI-2026-10 | |
 
 ## Data (`data/`)
 
