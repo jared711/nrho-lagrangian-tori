@@ -51,3 +51,9 @@ Running log of the solver work, newest last. Commit hashes refer to this repo. S
 * Outward on 32×32: 16 tori to ε = 0.570, then a genuine truncation floor (~1e-11) as the torus grows. Upsampled to 64×64, the same torus converges to 4.1e-13 and continuation proceeds → refinement on stall is needed (now meaningful with the sup norm).
 * Running: inward toward the NRHO (ε to −0.99 of the detuning) and outward on 64×64.
 * Next: automatic refinement on stall; family table and figures (frequency map with the family, tori in configuration space, Newton histories).
+
+### Update: outward continuation, paper draft, QPO figures, impact boundary (2026-10-01, late)
+* Automatic grid refinement on stall (`ab4d59e`); outward branch to 9.4 km on 64×64 (`3acd626`). A far-outward run (ε limit 100) is still going in /tmp/fam97_far.
+* `references.bib` rebuilt with 33 verified entries (`19a368f`); new paper draft, 14 pages, compiles (`742d785`), with author TODOs.
+* QPO visualizations (`figures/qpo3d/`).
+* **Impact boundary:** NRHO Id 97's perilune is only 4.2 km above Enceladus' mean surface, and tori larger than ~9 km dip below it. Along the elliptic NRHO members the perilune altitude falls with Id (Id 53: 17.1 km, Id 85: 7.8 km, Id ≥ 113 subsurface). **Id 53** (perilune 17.1 km, resonance distance 0.017) is the candidate mission-relevant family to compute next.
