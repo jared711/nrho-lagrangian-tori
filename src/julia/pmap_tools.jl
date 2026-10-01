@@ -223,3 +223,94 @@ function frequency_map(input_file, zfix, V, amps1, amps2; niter=2048)
     end
     return rho, diff
 end
+
+"""
+    eval_torus(input_file) -> (F, DF)
+
+Evaluate the section map and its Jacobian at every grid point of the torus in
+`input_file` (bin/param --eval). F is n x n x 4 and DF is n x n x 4 x 4, indexed like
+`write_input` (K[i1, i2, :]).
+"""
+function eval_torus(input_file, n)
+    F = zeros(n, n, 4)
+    DF = zeros(n, n, 4, 4)
+    cnt = 0
+    for line in readlines(`$PARAM $input_file --eval`)
+        v = split(line)
+        length(v) == 21 || continue
+        l = tryparse(Int, v[1]); l === nothing && continue
+        i1, i2 = divrem(l, n)
+        x = parse.(Float64, v[2:end])
+        F[i1+1, i2+1, :] = x[1:4]
+        DF[i1+1, i2+1, :, :] = permutedims(reshape(x[5:20], 4, 4))
+        cnt += 1
+    end
+    cnt == n^2 || error("map evaluation failed ($cnt of $(n^2) points)")
+    return F, DF
+end
+
+"""
+    shift_matrix(n, w) -> S
+
+Real n x n matrix of the Fourier shift u(θ) -> u(θ + w) on a grid of n points
+(trigonometric interpolation; the Nyquist mode is shifted by its real part).
+"""
+function shift_matrix(n, w)
+    k = [j < n ÷ 2 ? j : j - n for j in 0:n-1]
+    mult = [abs(kk) == n ÷ 2 ? complex(cos(2π * kk * w)) : cis(2π * kk * w) for kk in k]
+    Fm = [cis(-2π * j * kk / n) for kk in 0:n-1, j in 0:n-1]
+    return real(Fm' * Diagonal(mult) * Fm / n)
+end
+
+"""
+    collocation_newton(K, rho, H, mu; iters=6, tmpfile) -> (K, errors)
+
+Reference solver: full Newton for F(K(θ)) = K(θ + ρ) on the n x n grid with fixed
+frequency, solving the dense linearized equation
+    DF(K(θ_p)) ΔK(θ_p) - ΔK(θ_p + ρ) = -E(θ_p)
+together with the phase conditions Σ_p ∂_{θ_j}K(θ_p) · ΔK(θ_p) = 0 (least squares).
+"""
+function collocation_newton(K, rho, H, mu; iters=6, tmpfile="/tmp/colloc_torus.csv")
+    n = size(K, 1)
+    S1, S2 = shift_matrix(n, rho[1]), shift_matrix(n, rho[2])
+    S = kron(S1, S2)                 # acts on vectors with the second index fastest
+    D1 = kron(shift_derivative(n), Matrix(I, n, n))
+    D2 = kron(Matrix(I, n, n), shift_derivative(n))
+    flat(A) = vec(permutedims(A, (2, 1)))     # i2 fastest
+    unflat(v) = permutedims(reshape(v, n, n), (2, 1))
+    errs = Float64[]
+    for it in 1:iters
+        write_input(tmpfile, rho, K, H, mu)
+        F, DF = eval_torus(tmpfile, n)
+        E = zeros(n * n, 4)
+        for c in 1:4
+            E[:, c] = flat(F[:, :, c]) - S * flat(K[:, :, c])
+        end
+        push!(errs, maximum(abs.(E)))
+        @printf("  collocation Newton it %d  max|E| = %.3e\n", it, errs[end])
+        it == iters && break
+        m = n * n
+        A = zeros(4m + 2, 4m)
+        for c in 1:4, d in 1:4
+            A[(c-1)*m+1:c*m, (d-1)*m+1:d*m] = Diagonal(flat(DF[:, :, c, d]))
+        end
+        for c in 1:4
+            A[(c-1)*m+1:c*m, (c-1)*m+1:c*m] -= S
+            A[4m+1, (c-1)*m+1:c*m] = (D1 * flat(K[:, :, c]))'
+            A[4m+2, (c-1)*m+1:c*m] = (D2 * flat(K[:, :, c]))'
+        end
+        b = [-vec(E); 0.0; 0.0]
+        dK = A \ b
+        for c in 1:4
+            K[:, :, c] += unflat(dK[(c-1)*m+1:c*m])
+        end
+    end
+    return K, errs
+end
+
+"""Spectral derivative matrix d/dθ on n grid points (θ ∈ [0,1))."""
+function shift_derivative(n)
+    k = [j < n ÷ 2 ? j : (j == n ÷ 2 ? 0 : j - n) for j in 0:n-1]
+    Fm = [cis(-2π * j * kk / n) for kk in 0:n-1, j in 0:n-1]
+    return real(Fm' * Diagonal(2π * im .* k) * Fm / n)
+end
