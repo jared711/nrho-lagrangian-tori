@@ -1102,7 +1102,7 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     {
         for (int j = 0; j < 6; j++)
         {
-            DP[i][j] = x[6 + 6 * i + j]; // fill the rest of the matrix with the STM
+            DP[i][j] = *vr1(6, 0, x, i, j); // STM is stored column-major: x[6 + 6*j + i] = Phi_ij
         }
     }
     
