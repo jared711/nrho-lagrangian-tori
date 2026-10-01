@@ -109,7 +109,7 @@ void normal0_standard(matrix &N0, int *nn, int nelem);
 
 /* functions created by Jared Blanchard May, 2024*/
 void nu(complex *z, double *x, double (*Dnu)[4]);
-void get_dp3(complex *z, double *dp3);
+void get_dp3(complex *z, double p3, double *dp3);
 void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz);
 void sform_CR3BP(complex *z, complex **Omegaz);
 void gform_CR3BP(complex *z, complex **Metricz);
@@ -975,10 +975,12 @@ void get_p3(double *x)
     // return p3;
 }
 
-void get_dp3(complex *z, double *dp3){
+/* Gradient of p3(q1,q2,p1,p2) on the section q3=0 at fixed energy H.
+   d(p3^2) is computed first and then divided by 2*p3. */
+void get_dp3(complex *z, double p3, double *dp3){
     double mu = lambda[1];
     double q1 = z[0].real;  double q2 = z[1].real;
-    double p1 = z[2].real;  double p2 = z[4].real;
+    double p1 = z[2].real;  double p2 = z[3].real;
     double xmmu = q1 - mu, xmmup1 = xmmu + 1;
     double r12 = SQR(xmmu) + SQR(q2);
     double r22 = SQR(xmmup1) + SQR(q2);
@@ -990,6 +992,8 @@ void get_dp3(complex *z, double *dp3){
     dp3[1] = 2 * (-p1 - (1 - mu) *   (q2) / r13 - mu *     (q2) / r23); // dp3dq2
     dp3[2] = -2 * q2 - 2 * p1; // dp3dp1
     dp3[3]= 2 * q1 - 2 * p2; // dp3dp2
+    for (int i = 0; i < 4; i++)
+        dp3[i] /= 2 * p3;
 }
 
 /* nu takes the 4D state and returns the 6D state on the Poincare Map along with the differential*/
@@ -1014,7 +1018,7 @@ void nu(complex *z, double *x, double (*Dnu)[4]){
     
     // get the differential of p3 with respect to the 4D state
     double dp3[4];
-    get_dp3(z, dp3); // dp3dq1, dp3dq2, dp3dp1, dp3dp2
+    get_dp3(z, x[5], dp3); // dp3dq1, dp3dq2, dp3dp1, dp3dp2
     Dnu[5][0] = dp3[0]; Dnu[5][1] = dp3[1]; Dnu[5][2] = dp3[2]; Dnu[5][3] = dp3[3];
 }
 
@@ -1204,25 +1208,11 @@ void sform_CR3BP(complex *z, complex **Omegaz)
 
 void gform_CR3BP(complex *z, complex **Metricz)
 {
-    // Do I need to convert all of these to doubles? yes
-    double q1, q2, p1, p2;
-    q1 = z[0].real;
-    q2 = z[1].real;
-    p1 = z[2].real;
-    p2 = z[3].real;
-    double mu = lambda[1];
-    double xmmu = q1 - mu, xmmup1 = xmmu + 1;
-    double r12 = SQR(xmmu) + SQR(q2);
-    double r22 = SQR(xmmup1) + SQR(q2);
-    double r1 = sqrt(r12);
-    double r2 = sqrt(r22);
-    double r13 = r1 * r1 * r1;
-    double r23 = r2 * r2 * r2;
-    double dp3dq1 = 2 * (p2 - (1 - mu) * (xmmup1) / r13 - mu * (xmmup1) / r23);
-    double dp3dq2 = 2 * (-p1 - (1 - mu) * (q2) / r13 - mu * (q2) / r23);
-    double dp3dp1 = -2 * q2 - 2 * p1;
-    double dp3dp2 = 2 * q1 - 2 * p2;
-    // Just a big Identity matrix
+    // Metric induced on the section by the Euclidean metric of R^6: I + grad(p3) grad(p3)^T
+    double x[6], Dnu[6][4], dp3[4];
+    nu(z, x, Dnu);
+    get_dp3(z, x[5], dp3);
+    double dp3dq1 = dp3[0], dp3dq2 = dp3[1], dp3dp1 = dp3[2], dp3dp2 = dp3[3];
     Metricz[0][0] = val1 + SQR(dp3dq1);
     Metricz[0][1] = val0 + dp3dq1 * dp3dq2;
     Metricz[0][2] = val0 + dp3dq1 * dp3dp1;
