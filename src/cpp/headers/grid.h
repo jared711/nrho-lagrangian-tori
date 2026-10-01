@@ -805,6 +805,11 @@ grid cohomological (const grid& g, double *omega)
     index=new int[g.ndim];
     index_serie=new int[g.ndim];
 
+    /* Coefficients below tolgrid relative to the largest one are treated as zero. (Was an
+       absolute threshold, which zeroed whole right-hand sides for small tori; 2026-10-01.) */
+    double gmax=0.0;
+    for(int i=0;i<g.nelem;i++) if (abs(g.elem[i])>gmax) gmax=abs(g.elem[i]);
+
     coho.elem[0]=0.0;
     for(int i=1;i<g.nelem;i++){
         indices(i,g.nn,index,g.ndim);
@@ -813,7 +818,7 @@ grid cohomological (const grid& g, double *omega)
         for(int j=0;j<g.ndim;j++) aux = aux + index_serie[j]*omega[j];
         
         aux1=abs(g.elem[i]);
-        if (aux1<tolgrid) coho.elem[i]=complex(0.0,0.0);
+        if (aux1<tolgrid*gmax) coho.elem[i]=complex(0.0,0.0);
         else coho.elem[i]=g.elem[i]/(1.0-complex(cos(pi2*aux),sin(pi2*aux)));
         //coho.elem[i]=g.elem[i]/(1.0-complex(cos(pi2*aux),sin(pi2*aux)));
         if (is_nyquist(g,index)) coho.elem[i]=0.0;

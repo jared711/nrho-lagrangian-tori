@@ -24,7 +24,7 @@ from git history.
 
 | File | Origin | Later changes |
 |---|---|---|
-| `headers/grid.h`, `headers/matrix.h`, `headers/complex.h` | BCN-KAM | JB-2024: debug prints added to the `matrix` copy constructor and `fft_F` (`ca0df7c`). AI-2026-10: Nyquist modes zeroed in `deriva`, `shift`, `cohomological` (`grid.h`) |
+| `headers/grid.h`, `headers/matrix.h`, `headers/complex.h` | BCN-KAM | JB-2024: debug prints added to the `matrix` copy constructor and `fft_F` (`ca0df7c`). AI-2026-10: Nyquist modes zeroed in `deriva`, `shift`, `cohomological`; `cohomological` threshold made relative (`grid.h`) |
 | `rtbphp.c`, `seccp.c`, `fluxvp.c`, `rk78vp.c`, `campvp.c`, `scread.c`, `vbprintf.c`, `headers/{rtbphp,seccp,fluxvp,rk78vp,campvp,scread,vbprintf,utils}.h` | BCN-RTBP | JB-2024: English translations of the Catalan comments, argument documentation in `seccp.c`, reformatting. The "RTBP" integrator settings in `fluxvp.c` (`fluxvp_tol=4e-14`, etc.) were already in the first commit, so they are BCN-RTBP |
 | `param.cc`: `kam_torus()`, `realloc_torus()`, the continuation/Newton driver in `main()`, and the standard and Froeschle maps | BCN-KAM | see below |
 | `param.cc`: `nu()`, `get_p3()`, `get_dp3()`, `map_CR3BP()`, `sform_CR3BP()`, `gform_CR3BP()`, `normal0_CR3BP()`, `wrtf()`, `state2ham()`, the `DTOR/DMAP/NPAR` settings for the CR3BP, and the input-file reading | JB-2024 ("functions created by Jared Blanchard May, 2024") | see below |
