@@ -244,6 +244,80 @@ int main(int argc, char *argv[])
 
 
     paramF = fft_F(paramR);
+
+    /* Orbit mode: iterate the Poincare map from z = (q1,q2,p1,p2) given on the command line.
+       Usage: param input.csv --orbit niter q1 q2 p1 p2
+       Prints each iterate; the first line also contains the Jacobian of the map at z. */
+    if (argc > 7 && strcmp(argv[2], "--orbit") == 0)
+    {
+        int niter = atoi(argv[3]);
+        complex zc[DMAP], f0[DMAP], dep[DMAP];
+        complex *D0[DMAP];
+        for (int i = 0; i < DMAP; i++)
+        {
+            D0[i] = new complex[DMAP];
+            zc[i] = atof(argv[4 + i]);
+        }
+        cout.precision(16);
+        for (int k = 0; k < niter; k++)
+        {
+            map_CR3BP(zc, f0, D0, dep);
+            if (map_failures > 0)
+            {
+                cout << "# map failed at iterate " << k << endl;
+                return 1;
+            }
+            if (k == 0)
+            {
+                cout << "# Dfz";
+                for (int i = 0; i < DMAP; i++)
+                    for (int j = 0; j < DMAP; j++)
+                        cout << " " << D0[i][j].real;
+                cout << endl;
+            }
+            for (int i = 0; i < DMAP; i++)
+            {
+                zc[i] = f0[i];
+                cout << zc[i].real << (i < DMAP - 1 ? " " : "\n");
+            }
+        }
+        return 0;
+    }
+
+    /* Verification mode: compare Dfz from map_CR3BP against central finite differences */
+    if (argc > 2 && strcmp(argv[2], "--fdcheck") == 0)
+    {
+        complex zc[DMAP], zp[DMAP], zm[DMAP], f0[DMAP], fp[DMAP], fm[DMAP], dep[DMAP];
+        complex *D0[DMAP], *Dtmp[DMAP];
+        for (int i = 0; i < DMAP; i++)
+        {
+            D0[i] = new complex[DMAP];
+            Dtmp[i] = new complex[DMAP];
+            zc[i] = paramR.coef[i][0].elem[0];
+        }
+        map_CR3BP(zc, f0, D0, dep);
+        double hfd = 1e-7, maxrel = 0;
+        for (int j = 0; j < DMAP; j++)
+        {
+            for (int i = 0; i < DMAP; i++)
+                zp[i] = zm[i] = zc[i];
+            zp[j].real += hfd;
+            zm[j].real -= hfd;
+            map_CR3BP(zp, fp, Dtmp, dep);
+            map_CR3BP(zm, fm, Dtmp, dep);
+            for (int i = 0; i < DMAP; i++)
+            {
+                double fd = (fp[i].real - fm[i].real) / (2 * hfd);
+                double an = D0[i][j].real;
+                double rel = fabs(fd - an) / fmax(1.0, fabs(fd));
+                maxrel = fmax(maxrel, rel);
+                cout << "Dfz[" << i << "][" << j << "] analytic " << an << " fd " << fd << " diff " << rel << endl;
+            }
+        }
+        cout << "# max |analytic - fd| / max(1,|fd|) = " << maxrel << endl;
+        cout << "# map failures: " << map_failures << endl;
+        return 0;
+    }
     // print out all components of paramR and paramF
     // for (int i = 0; i < DMAP; i++)
     // {
