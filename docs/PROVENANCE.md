@@ -55,7 +55,8 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 * AI-2026-10: error of invariance measured as the max over the grid of |E| in physical coordinates (was the Fourier l1 norm in local units); `tolinva` stays physical.
 * AI-2026-10: imaginary parts of K dropped after each Newton step (`--no-real` disables), with a diagnostic print.
 * AI-2026-10: local-frame construction moved to `build_local_frame()`; the frame is rebuilt from each accepted continuation step (`--fixed-frame` keeps it fixed); `local_to_physical()`, `physical_to_local()`.
-* AI-2026-10: grid refinement when Newton stalls above `--tol-floor` (once per Newton loop).
+* AI-2026-10: grid refinement when Newton stalls above `--tol-floor` (once per Newton loop). Refinement only within 100× of the floor.
+* AI-2026-10: map evaluations in STEP 1 of `kam_torus()` run in parallel with OpenMP (per-thread work arrays, atomic `map_failures`); `-fopenmp` in the Makefile; the step-size statistics in `fluxvp.c` (BCN-RTBP) are updated in an OpenMP critical section.
 * `4b6c47a`: `--fdcheck` and `--orbit` modes in `main()`.
 * AI-2026-10: local coordinates ζ = (z − z_c)/s for the CR3BP torus (`to_physical()`, `zcen`, `zscale`); `map_CR3BP()` and `gform_CR3BP()` take ζ.
 * AI-2026-10: local coordinates generalized to z = z_c + M ζ, with M from the symplectically normalized first harmonics of the input torus, rescaled so the torus circles have radius ~1 (`Mloc`, `Minv`, `Omega_loc`, `invert4()`); `sform_CR3BP()` returns Ω_loc = MᵀΩM (suggested by the code-audit and literature agents).

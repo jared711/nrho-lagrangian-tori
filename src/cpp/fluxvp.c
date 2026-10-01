@@ -59,8 +59,12 @@ int fluxvp (int n, int nv, int np, void *prm, campvp_t camp,
 	 for (i=0; i<n; i++) fprintf(forb, " %.16G", x[i]);
 	 fprintf(forb, "\n");
       }
+      /* step-size statistics (shared): serialized when maps are evaluated in parallel (OpenMP) */
+#pragma omp critical(fluxvp_stats)
+      {
       if (fabs(*h)<fluxvp_pasminfet) fluxvp_pasminfet=fabs(*h);
       if (fabs(*h)>fluxvp_pasmaxfet) fluxvp_pasmaxfet=fabs(*h);
+      }
    }
 /* Ajusto */
    tf=t0+s*T;

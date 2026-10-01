@@ -1087,28 +1087,37 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     /*****************************************************************
     STEP 1 Evaluation of the invariance error
     *****************************************************************/
+    /* The map evaluations at the grid points are independent: run them in parallel (OpenMP), with
+       per-thread work arrays. Each point writes only its own entries of FparamR, DFKR, OmegaKR and
+       MetricKR. */
+#pragma omp parallel for schedule(dynamic, 4)
     for (int l = 0; l < nelem; l++)
     {
-        indices(l, nn, index, DTOR);
+        complex zl[DMAP], fzl[DMAP], depl[DMAP];
+        complex Drow[DMAP][DMAP], Orow[DMAP][DMAP], Grow[DMAP][DMAP];
+        complex *Dl[DMAP], *Ol[DMAP], *Gl[DMAP];
         for (int i = 0; i < DMAP; i++)
         {
-            z[i] = paramR.coef[i][0].elem[l];
+            Dl[i] = Drow[i];
+            Ol[i] = Orow[i];
+            Gl[i] = Grow[i];
+            zl[i] = paramR.coef[i][0].elem[l];
             // if (i < DTOR) // Jared wants to comment out these lines on 6/27/24
                 // z[i] = z[i] + ((double)index[i]) / ((double)nn[i]);
         }
-        (*map)(z, fz, Dfz, depfz);
-        (*sform)(z, Omegaz);
+        (*map)(zl, fzl, Dl, depl);
+        (*sform)(zl, Ol);
         if (Case != 1)
-            (*gform)(z, Metricz);
+            (*gform)(zl, Gl);
         for (int i = 0; i < DMAP; i++)
         {
-            FparamR.coef[i][0].elem[l] = fz[i];
+            FparamR.coef[i][0].elem[l] = fzl[i];
             for (int j = 0; j < DMAP; j++)
             {
-                DFKR.coef[i][j].elem[l] = Dfz[i][j];
-                OmegaKR.coef[i][j].elem[l] = Omegaz[i][j];
+                DFKR.coef[i][j].elem[l] = Dl[i][j];
+                OmegaKR.coef[i][j].elem[l] = Ol[i][j];
                 if (Case != 1)
-                    MetricKR.coef[i][j].elem[l] = Metricz[i][j];
+                    MetricKR.coef[i][j].elem[l] = Gl[i][j];
             }
         }
     }
@@ -1717,7 +1726,10 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     int sec_ret = seccp(6 /*n*/, 42 /*nv*/, 0 /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t /*&t*/, x /*x*/, &h /*&h*/, cp /*psec hyperplane*/,
           1 /*nsec*/, isiggrad /*isiggrad*/, tolJM /*tol*/, 0 /*ivb*/, 1 /*idt*/, Dtau /*dt*/, wrtf /*write function*/, fp /*filename*/, maxts /*maxts*/);
     if (sec_ret < 0 || x[5] != x[5]) // seccp failed, or p3 is NaN (point is off the energy surface)
+    {
+#pragma omp atomic
         map_failures++;
+    }
 
     fz[0].real = x[0]; // x
     fz[0].imag = val0;

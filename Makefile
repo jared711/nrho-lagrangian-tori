@@ -12,8 +12,8 @@ OPT = -g -Wall
 #OPT = -O3 -Wall
 # Use -iquote for local headers (searched for #include "...")
 # but not -I (which affects #include <...>)
-CFLAGS = $(OPT) -ffast-math -fdiagnostics-color=always -iquote$(HEADER_DIR)
-CXXFLAGS = $(OPT) -ffast-math -fdiagnostics-color=always -I$(HEADER_DIR)
+CFLAGS = $(OPT) -fopenmp -ffast-math -fdiagnostics-color=always -iquote$(HEADER_DIR)
+CXXFLAGS = $(OPT) -fopenmp -ffast-math -fdiagnostics-color=always -I$(HEADER_DIR)
 
 # Target executable
 TARGET = $(BIN_DIR)/param
