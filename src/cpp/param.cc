@@ -431,12 +431,9 @@ int main(int argc, char *argv[])
     cout << "# zcen: " << zcen[0] << " " << zcen[1] << " " << zcen[2] << " " << zcen[3] << endl;
     cout << "# zscale: " << zscale << endl;
 
-    /* If the initial torus is not invariant, we shold uncomment the following line: */
-    conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_identity,normal0_CR3BP);
-
-    // REMOVED duplicate kam_torus() call that was causing error to increase instead of decrease
-    // due to compounding Fourier truncation from clean(paramF) on line 601
-    // conv = kam_torus(paramR,paramF,omega,error,nn,nelem,tail0,tails,2,map_CR3BP,sform_CR3BP,gform_identity,normal0_CR3BP);
+    /* No Newton step here: the Newton loop below starts from the input torus. A step taken here
+       (as in the original code) would be stored in paramR0 below, so every continuation step and
+       every non-converged restart would start from the once-corrected torus instead of the input. */
 
     // return 0;
 

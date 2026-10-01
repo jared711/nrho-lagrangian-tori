@@ -34,6 +34,7 @@ Changes to BCN-KAM code inside `param.cc`:
 * JB-2024: commented out the angle lift `z[i] += index[i]/nn[i]` where K is evaluated (dated 6/27/24), and removed the identity from `LR` ("Alex 5/3 get rid of the val1", i.e. advice from Àlex Haro).
 * AI-2026-08 (`c52cac6`): commented out the second `kam_torus()` call and added `MAX_CONT_STEPS`/`MAX_EPSILON`. **The diagnosis behind this change was wrong.** Repeating a Newton step is correct; the error grew because of the bugs fixed in AI-2026-10.
 * AI-2026-10 (`5a16052`): removed the remaining angle lift on K(θ+ω).
+* AI-2026-10: removed the unconditional `kam_torus()` call before the continuation loop (found by a code-audit agent).
 * AI-2026-10 (`6ee5174`): `kam_torus()` returns −1 when the Poincaré map failed.
 * AI-2026-10 (`f83e8f0`): `kam_torus()` prints diagnostics after each step: the residual of the linearized equation, the Lagrangian defect, and the symplectic-frame check. `3c7ad63`: also the averaged torsion ⟨T⟩.
 * AI-2026-10: `map_twist()`, `gform_identity()` and the `--test-twist` mode, an integrable twist map that validates `kam_torus()` on Cartesian (non-lifted) tori.
