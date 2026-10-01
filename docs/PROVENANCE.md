@@ -50,7 +50,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 * `6ee5174`: check of the `seccp()` return value.
 * `4b6c47a`: `--fdcheck` and `--orbit` modes in `main()`.
 * AI-2026-10: local coordinates ζ = (z − z_c)/s for the CR3BP torus (`to_physical()`, `zcen`, `zscale`); `map_CR3BP()` and `gform_CR3BP()` take ζ.
-* AI-2026-10: local coordinates generalized to z = z_c + M ζ, with M from the symplectically normalized first harmonics of the input torus (`Mloc`, `Minv`, `Omega_loc`, `invert4()`); `sform_CR3BP()` returns Ω_loc = MᵀΩM (suggested by the code-audit and literature agents).
+* AI-2026-10: local coordinates generalized to z = z_c + M ζ, with M from the symplectically normalized first harmonics of the input torus, rescaled so the torus circles have radius ~1 (`Mloc`, `Minv`, `Omega_loc`, `invert4()`); `sform_CR3BP()` returns Ω_loc = MᵀΩM (suggested by the code-audit and literature agents).
 * AI-2026-10: in `kam_torus()` (Case 2), N(θ+ω) is computed pointwise from L(θ+ω) with the frame formula instead of Fourier-shifting N (suggested by the code-audit agent).
 
 ## Julia (`src/julia/`)

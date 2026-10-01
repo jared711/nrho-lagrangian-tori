@@ -445,7 +445,13 @@ int main(int argc, char *argv[])
         }
         /* Symplectic normalization of each pair (a_j, b_j): scale so that a_j^T Omega b_j = -1, the
            value of e_q^T Omega e_p for the standard form. Omega_loc is then close to the standard
-           form and zeta is measured in units of sqrt(action). */
+           form. Afterwards all columns are multiplied by a common factor sym_scale = sqrt(mean action)
+           so that the circles of the torus have radius ~1 in zeta and every quantity in kam_torus
+           (L, N, T, eta) is O(1): the grid utilities use absolute tolerances (tolgrid in
+           cohomological() and clean(), tolqr in inv()), which fail for a torus of size ~1e-5.
+           The form is divided by sym_scale^2 accordingly (a constant multiple of a symplectic form
+           is preserved by the same maps). */
+        double sym_scale = 0.0;
         {
             double Om0[DMAP][DMAP] = {{0, 0, -1, 0}, {0, 0, 0, -1}, {1, 0, 0, 0}, {0, 1, 0, 0}};
             for (int j = 0; j < DTOR; j++)
@@ -456,6 +462,7 @@ int main(int argc, char *argv[])
                         w += Mloc[k][j] * Om0[k][m] * Mloc[m][j + DTOR];
                 if (w == 0.0)
                     continue;
+                sym_scale += fabs(w) / DTOR;
                 double sa = 1.0 / sqrt(fabs(w)), sb = (w > 0) ? -sa : sa;
                 for (int k = 0; k < DMAP; k++)
                 {
@@ -463,6 +470,13 @@ int main(int argc, char *argv[])
                     Mloc[k][j + DTOR] *= sb;
                 }
             }
+            sym_scale = sqrt(sym_scale);
+            if (sym_scale > 0.0)
+                for (int k = 0; k < DMAP; k++)
+                    for (int j = 0; j < DMAP; j++)
+                        Mloc[k][j] *= sym_scale;
+            else
+                sym_scale = 1.0;
         }
         if (!invert4(Mloc, Minv))
         {
@@ -482,6 +496,7 @@ int main(int argc, char *argv[])
                 for (int k = 0; k < DMAP; k++)
                     for (int m = 0; m < DMAP; m++)
                         Omega_loc[i][j] += Mloc[k][i] * Om[k][m] * Mloc[m][j];
+                Omega_loc[i][j] /= sym_scale * sym_scale;
             }
         /* zscale converts local lengths to physical ones: |dz| <~ zscale |dzeta| */
         zscale = 0.0;
