@@ -1452,7 +1452,7 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     // int np = 0;
     int ibck = 0; // If ibck==1, backward in time (forward if ==0)
     int isiggrad = 1; // needs to be 1 so that the pmap stops in the direction of cp
-    double tolJM = 1e-12;
+    double tolJM = 1e-14; // section-crossing tolerance; 1e-12 left a map-noise floor of ~2e-11 (see commit message)
     double maxts = 13;
     // int ivb = 1;
     // int nsecss = 1;

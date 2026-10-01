@@ -48,6 +48,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 * `80585d6`: STM index order in `map_CR3BP()`.
 * `c45f46c`: `get_dp3()` chain rule and index; `gform_CR3BP()` now reuses it.
 * `6ee5174`: check of the `seccp()` return value.
+* AI-2026-10: section-crossing tolerance `tolJM` in `map_CR3BP()` 1e-12 → 1e-14.
 * `4b6c47a`: `--fdcheck` and `--orbit` modes in `main()`.
 * AI-2026-10: local coordinates ζ = (z − z_c)/s for the CR3BP torus (`to_physical()`, `zcen`, `zscale`); `map_CR3BP()` and `gform_CR3BP()` take ζ.
 * AI-2026-10: local coordinates generalized to z = z_c + M ζ, with M from the symplectically normalized first harmonics of the input torus, rescaled so the torus circles have radius ~1 (`Mloc`, `Minv`, `Omega_loc`, `invert4()`); `sform_CR3BP()` returns Ω_loc = MᵀΩM (suggested by the code-audit and literature agents).
