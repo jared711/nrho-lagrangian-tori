@@ -70,6 +70,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 | `parameterization-method.jl` (KAM STEP 1 port), `test_kam_torus.jl`, `README.md` | AI-2026-08 (`6d53f3c`) | |
 | `family_analysis.jl` (family table and figures) | AI-2026-10 | |
 | `qpo_visualization.jl` (QPOs in configuration space; NRHO_ID env var; reads .gz) | AI-2026-10 | |
+| `family_pipeline.jl` (set-up of a family for any elliptic NRHO member) | AI-2026-10 | |
 | `pmap_tools.jl` (fixed points, NAFF frequency analysis, torus fitting, frequency map, dense collocation Newton) | AI-2026-10 | |
 
 ## Data (`data/`)
