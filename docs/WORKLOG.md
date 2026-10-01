@@ -43,3 +43,11 @@ Running log of the solver work, newest last. Commit hashes refer to this repo. S
 * Stall detection (`491408d`) and Haro–Mondelo low-pass filter (`03032b6`): Newton converges 2.6e-10 → 1.2e-11 and stays there. **First accepted CR3BP torus** (NRHO Id 97).
 * Continuation in ω (`912714b`): 5 tori accepted up to ε = 0.125 (|Δω| ~ 6e-5), then stuck as the floor rises toward tol-floor. Refining the grid on stall made it worse (not committed).
 * Open: the source of the ~1e-11 floor; continuation step size; nearest resonance along the path is (−1, 7) at 3e-3.
+
+### Update: first families (2026-10-01, night)
+* The "~1e-11 floor" was mostly the error measure: the Fourier l1 norm summed ~1e-14 of noise per coefficient. With the sup norm over the grid in physical coordinates (`b5a787d`, as in Haro–Mondelo Alg. 3.6.1) a converged torus has error ~4e-13 LU (~0.1 mm). This also explains why finer grids looked worse before.
+* Continuation stalls came from the local frame being built once (stale as the torus changes). Rebuilding it after each accepted torus (`9c9c77f`) fixed them.
+* **Inward family** (NRHO Id 97, toward the NRHO): 43 tori, ε = 0 → −0.896, size 4.9e-5 → 1.6e-5 LU, median error 4.0e-13. Saved in `results/families/nrho_id97/inward/` (`8f54c61`).
+* Outward on 32×32: 16 tori to ε = 0.570, then a genuine truncation floor (~1e-11) as the torus grows. Upsampled to 64×64, the same torus converges to 4.1e-13 and continuation proceeds → refinement on stall is needed (now meaningful with the sup norm).
+* Running: inward toward the NRHO (ε to −0.99 of the detuning) and outward on 64×64.
+* Next: automatic refinement on stall; family table and figures (frequency map with the family, tori in configuration space, Newton histories).
