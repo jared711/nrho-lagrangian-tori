@@ -133,6 +133,7 @@ myreal tolinte;      // Tolerance on intermediate computation (e.g. matrix inver
 myreal *lambda; // Fixed parameters or constants
 myreal epsilon; // Continuation parameter
 int map_failures = 0; // Number of failed Poincare map evaluations since last check
+int free_frequency = 0; // 1: Newton corrects omega and fixes the average normal correction (--free-omega)
 
 /* The torus is solved in local coordinates zeta = (z - zcen) / zscale, where z = (q1,q2,p1,p2)
    are the physical section coordinates. map_CR3BP and gform_CR3BP take zeta. */
@@ -175,6 +176,10 @@ int main(int argc, char *argv[])
     val10 = 10.0;
     pi2 = 6.2831853071795864769252867665590057684;
     /**** END   We set global variables ****/
+
+    for (int i = 2; i < argc; i++)
+        if (strcmp(argv[i], "--free-omega") == 0)
+            free_frequency = 1;
 
     cout << scientific;
     cout.precision(15);
@@ -936,6 +941,21 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
             }
         }
     }
+
+    /* Free-frequency variant: fix the average of xi_N to zero (the "action" of the torus)
+       and correct the frequency instead. With K(theta + omega + domega) in the invariance
+       error, the tangent row of the reduced equation gains -domega, so its solvability
+       condition <eta_L - T xi_N> + domega = 0 gives domega = -<eta_L - T R(eta_N)> = -neweta0.
+       No inverse of the torsion <T> is needed. */
+    myreal domega[DTOR];
+    if (free_frequency)
+    {
+        for (int i = 0; i < DTOR; i++)
+        {
+            xiN0[i][0] = 0.0;
+            domega[i] = -neweta0[i][0];
+        }
+    }
     xiNR = RetaNR;
 
     for (int l = 0; l < nelem; l++)
@@ -947,6 +967,10 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     }
 
     newetaR = etaLR - twistR * xiNR;
+    if (free_frequency)
+        for (int l = 0; l < nelem; l++)
+            for (int i = 0; i < DTOR; i++)
+                newetaR.coef[i][0].elem[l] = newetaR.coef[i][0].elem[l] + domega[i];
     newetaF = fft_F(newetaR);
     xiLF = cohomological(newetaF, omega);
     xiLR = fft_B(xiLF);
@@ -1002,6 +1026,14 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     delete[] xiN0;
 
     paramR = newparamR;
+    if (free_frequency)
+    {
+        for (int i = 0; i < DTOR; i++)
+            omega[i] = omega[i] + domega[i];
+        cout.precision(15);
+        cout << "#     - Frequency correction: " << domega[0] << " " << domega[1] << ", new omega: " << omega[0] << " " << omega[1] << endl;
+        cout.precision(3);
+    }
     paramF = newparamF;
 
     /* This is just to show the size of the correction */
