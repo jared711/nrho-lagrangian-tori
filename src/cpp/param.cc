@@ -734,9 +734,11 @@ int main(int argc, char *argv[])
                     for (int i = 0; i < DTOR; i++)
                         best_omega[i] = entry_omega[i];
                 }
-                if (error > 0.9 * prev_error && best_error >= tolfloor && 2 * nelem <= MAXF && !refined_on_stall)
+                if (error > 0.9 * prev_error && best_error >= tolfloor && best_error < 100.0 * tolfloor && 2 * nelem <= MAXF && !refined_on_stall)
                 {
-                    /* Stalled above tol-floor: with the low-pass filter the tail test cannot trigger
+                    /* Stalled above tol-floor but within 100x of it (a truncation floor; a stall far
+                       above it is a predictor that left the basin, handled by halving the step):
+                       with the low-pass filter the tail test cannot trigger
                        refinement, so do it here (Haro & Mondelo 2021, Alg. 3.6.1, step 5: if the error
                        is too large, double N), from the best torus, at the same epsilon. */
                     paramR = bestR;
