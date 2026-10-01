@@ -8,7 +8,7 @@ BUILD_DIR = build
 BIN_DIR = bin
 
 # Compiler flags
-OPT = -g -Wall
+OPT = -O2 -g -Wall
 #OPT = -O3 -Wall
 # Use -iquote for local headers (searched for #include "...")
 # but not -I (which affects #include <...>)

@@ -28,7 +28,7 @@ from git history.
 | `rtbphp.c`, `seccp.c`, `fluxvp.c`, `rk78vp.c`, `campvp.c`, `scread.c`, `vbprintf.c`, `headers/{rtbphp,seccp,fluxvp,rk78vp,campvp,scread,vbprintf,utils}.h` | BCN-RTBP | JB-2024: English translations of the Catalan comments, argument documentation in `seccp.c`, reformatting. The "RTBP" integrator settings in `fluxvp.c` (`fluxvp_tol=4e-14`, etc.) were already in the first commit, so they are BCN-RTBP |
 | `param.cc`: `kam_torus()`, `realloc_torus()`, the continuation/Newton driver in `main()`, and the standard and Froeschle maps | BCN-KAM | see below |
 | `param.cc`: `nu()`, `get_p3()`, `get_dp3()`, `map_CR3BP()`, `sform_CR3BP()`, `gform_CR3BP()`, `normal0_CR3BP()`, `wrtf()`, `state2ham()`, the `DTOR/DMAP/NPAR` settings for the CR3BP, and the input-file reading | JB-2024 ("functions created by Jared Blanchard May, 2024") | see below |
-| `Makefile` | JB-2024 | AI-2026-08: new directory layout (`1668c0c`) |
+| `Makefile` | JB-2024 | AI-2026-08: new directory layout (`1668c0c`). AI-2026-10: `-fopenmp`, `-O2` |
 
 Changes to BCN-KAM code inside `param.cc`:
 * JB-2024: commented out the angle lift `z[i] += index[i]/nn[i]` where K is evaluated (dated 6/27/24), and removed the identity from `LR` ("Alex 5/3 get rid of the val1", i.e. advice from Àlex Haro).
