@@ -135,6 +135,7 @@ myreal epsilon; // Continuation parameter
 int map_failures = 0; // Number of failed Poincare map evaluations since last check
 int free_frequency = 0; // 1: Newton corrects omega and fixes the average normal correction (--free-omega)
 myreal tolfloor = 1e-10; // accept a stalled Newton iteration if its best error is below this (physical, --tol-floor)
+int lowpass_filter = 1;                 // zero the upper half of the DFT after each Newton step (--no-filter)
 
 /* The torus is solved in local coordinates zeta, z = zcen + Mloc zeta, where z = (q1,q2,p1,p2)
    are the physical section coordinates and the columns of Mloc are the first-harmonic axes of
@@ -191,6 +192,8 @@ int main(int argc, char *argv[])
             free_frequency = 1;
         else if (strcmp(argv[i], "--tol-floor") == 0 && i + 1 < argc)
             tolfloor = atof(argv[++i]);
+        else if (strcmp(argv[i], "--no-filter") == 0)
+            lowpass_filter = 0;
 
     cout << scientific;
     cout.precision(15);
@@ -1176,6 +1179,29 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     *****************************************************************/
     newparamR = paramR + LR * xiLR + NR * xiNR;
     newparamF = fft_F(newparamR);
+    if (lowpass_filter)
+    {
+        /* Zero the upper half of the DFT coefficients (|k_j| >= nn[j]/4 in some direction) after
+           each Newton step, as in Haro & Mondelo 2021 (arXiv:2101.07665, pp. 27-28), to prevent
+           "divergence after apparent convergence": the relative error of the DFT coefficients
+           grows with |k|, and the small divisors amplify it. Same band as Step 0 of Figueras,
+           Haro & Luque 2017 (arXiv:1601.00084, Sec. 5.2). The tail test then measures how much
+           the step tried to put in that band. */
+        for (int l = 0; l < nelem; l++)
+        {
+            int idx[DTOR], ser[DTOR];
+            indices(l, nn, idx, DTOR);
+            trigo_to_series(nn, idx, ser, DTOR);
+            int high = 0;
+            for (int j = 0; j < DTOR; j++)
+                if (4 * abs(ser[j]) >= nn[j])
+                    high = 1;
+            if (high)
+                for (int i = 0; i < DMAP; i++)
+                    newparamF.coef[i][0].elem[l] = 0.0;
+        }
+        newparamR = fft_B(newparamF);
+    }
 
     /* Diagnostic: residual of the linearized equation DF(K) dK - dK(theta+omega) = -E */
     {
