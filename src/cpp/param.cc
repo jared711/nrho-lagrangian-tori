@@ -139,6 +139,7 @@ myreal domega_cont[DTOR] = {0.0, 0.0}; // continuation direction in omega per un
 myreal eps_max = 0.01;                  // continuation stops beyond this epsilon (--eps-max)
 int max_cont_steps = 10;                // maximum number of continuation steps (--max-steps)
 int lowpass_filter = 1;                 // zero the upper half of the DFT after each Newton step (--no-filter)
+int project_real = 1;                   // drop imaginary parts of K after each step (--no-real)
 
 /* The torus is solved in local coordinates zeta, z = zcen + Mloc zeta, where z = (q1,q2,p1,p2)
    are the physical section coordinates and the columns of Mloc are the first-harmonic axes of
@@ -206,6 +207,8 @@ int main(int argc, char *argv[])
             max_cont_steps = atoi(argv[++i]);
         else if (strcmp(argv[i], "--no-filter") == 0)
             lowpass_filter = 0;
+        else if (strcmp(argv[i], "--no-real") == 0)
+            project_real = 0;
 
     cout << scientific;
     cout.precision(15);
@@ -1232,6 +1235,21 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     STEP 4 New parameterization
     *****************************************************************/
     newparamR = paramR + LR * xiLR + NR * xiNR;
+    {
+        /* The torus is real: drop the imaginary parts that products and inverses of grid functions
+           leave behind. The map only sees Re K, but the shift, the frame and the cohomological
+           equations act on the full complex K, and the near-resonant small divisor
+           (|1 - e^{2 pi i k.omega}| ~ 0.018 at k = (-1, 7)) amplifies such content ~50x per step. */
+        double maxim = 0.0;
+        for (int i = 0; i < DMAP; i++)
+            for (int l = 0; l < nelem; l++)
+            {
+                maxim = fmax(maxim, fabs(newparamR.coef[i][0].elem[l].imag));
+                if (project_real)
+                    newparamR.coef[i][0].elem[l].imag = 0.0;
+            }
+        cout << "#     - max |Im K| after the step: " << maxim << (project_real ? " (removed)" : "") << endl;
+    }
     newparamF = fft_F(newparamR);
     if (lowpass_filter)
     {
