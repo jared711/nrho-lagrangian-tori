@@ -546,7 +546,7 @@ int main(int argc, char *argv[])
     }
     paramF = fft_F(paramR);
     toltail /= zscale; // tolerances in the input file are in physical units
-    tolinva /= zscale;
+    // tolinva stays in physical units: the error of invariance is measured in physical coordinates
     cout << "# zcen: " << zcen[0] << " " << zcen[1] << " " << zcen[2] << " " << zcen[3] << endl;
     cout << "# zscale: " << zscale << endl;
 
@@ -692,8 +692,8 @@ int main(int argc, char *argv[])
                     for (int i = 0; i < DTOR; i++)
                         omega[i] = best_omega[i];
                     error = best_error;
-                    conv = (best_error * zscale < tolfloor) ? 1 : 0;
-                    cout << "# Newton stalled; best error " << best_error * zscale << " (physical), "
+                    conv = (best_error < tolfloor) ? 1 : 0;
+                    cout << "# Newton stalled; best error " << best_error << " (physical), "
                          << (conv ? "accepted" : "not accepted") << " (tol-floor " << tolfloor << ")" << endl;
                     if (conv == 0)
                         conv = -1;
@@ -1042,9 +1042,21 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     ErrorR = FparamR - KshiftR;
 
     ErrorF = fft_F(ErrorR);
-    error = norm(ErrorF);
+    /* Error measure: max over the grid of |E(theta_j)|_inf in physical coordinates, E_phys = Mloc E
+       (as err(T) in Haro & Mondelo 2021, arXiv:2101.07665, p. 29). The Fourier l1 norm used before
+       sums the noise of every coefficient (~1e-14 each), so it grew with the grid size (1e-11 on
+       32x32, 1.6e-10 on 128x128) while the actual error stayed ~5e-13. */
+    error = 0.0;
+    for (int l = 0; l < nelem; l++)
+        for (int i = 0; i < DMAP; i++)
+        {
+            double v = 0.0;
+            for (int j = 0; j < DMAP; j++)
+                v += Mloc[i][j] * ErrorR.coef[j][0].elem[l].real;
+            error = fmax(error, fabs(v));
+        }
     cout << "#     - Error of invariance: ";
-    cout << error * zscale << " (physical), " << error << " (local)" << endl;
+    cout << error << " (max over grid, physical), " << norm(ErrorF) << " (Fourier l1, local)" << endl;
 
     if (error < tolinva)
     {
