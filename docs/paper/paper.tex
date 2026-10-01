@@ -1,670 +1,633 @@
-%% SIAM Conference Paper Template
-%% For SIAM conferences on Dynamical Systems, Applied Dynamical Systems, etc.
+%% First full draft, 2026-10-01.
+%% NOTE: the SIAM class (siamart220329.cls) is not installed on this machine, so this draft
+%% uses the standard article class. Swap in the SIAM template (\documentclass{siamart220329},
+%% \headers, \author with \thanks, etc.) before submission.
+%% Every number below comes from the git log, docs/WORKLOG.md, results/families/nrho_id97/*
+%% or figures/family_id97/id97_table.csv. Items marked TODO need input from the author.
 
-\documentclass[review,onefignum,onetabnum]{siamart220329}
+\documentclass[11pt]{article}
 
-% Packages
-\usepackage{amsmath,amsfonts,amssymb}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{graphicx}
-\usepackage{algorithm}
-\usepackage{algorithmic}
-\usepackage{hyperref}
 \usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\usepackage[capitalise]{cleveref}
 
-% Theorem environments
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{corollary}[theorem]{Corollary}
-\newtheorem{definition}[theorem]{Definition}
-\newtheorem{remark}[theorem]{Remark}
+\graphicspath{{figures/}}
 
-% Custom commands
-\newcommand{\RR}{\mathbb{R}}
-\newcommand{\CC}{\mathbb{C}}
-\newcommand{\norm}[1]{\left\|#1\right\|}
-\newcommand{\abs}[1]{\left|#1\right|}
-\newcommand{\CR3BP}{\text{CR3BP}}
+\newtheorem{remark}{Remark}
+\newcommand{\T}{\mathbb{T}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\avg}[1]{\langle #1 \rangle}
+\newcommand{\todo}[1]{\textbf{TODO: #1}}
+\DeclareMathOperator{\err}{err}
 
-% Paper metadata
-\title{Computing Invariant Tori Around Near-Rectilinear Halo Orbits
-       for Enceladus Mission Design}
-
-\author{Jared Blanchard\thanks{GNC Engineer, True Anomaly.
-        Email: \href{mailto:Jared.Blanchard@trueanomaly.space}{Jared.Blanchard@trueanomaly.space}}}
-
-\date{\today}
+\title{Lagrangian invariant tori around near-rectilinear halo orbits\\
+of the Saturn--Enceladus system by the parameterization method}
+\author{Jared Blanchard\thanks{\todo{affiliation}. Email: \todo{contact email}.}}
+\date{\todo{date / conference}}
 
 \begin{document}
-
 \maketitle
 
 \begin{abstract}
-We present an implementation and application of the parameterization method for
-computing invariant tori around Near-Rectilinear Halo Orbits (NRHOs) in the
-Saturn-Enceladus system. These two-dimensional quasi-periodic invariant manifolds
-represent families of orbits that remain in the vicinity of an NRHO, providing
-a continuum of trajectory options for mission design. Motivated by proposed
-missions to Enceladus, we develop a computational framework combining C++
-(numerical core) and Julia (analysis interface) to compute these tori using
-Haro and Luque's parameterization method. The method represents the torus as
-a Fourier series and uses a quasi-Newton correction scheme to enforce invariance
-under the flow. We demonstrate successful computation of high-accuracy tori
-around Enceladus NRHOs and discuss implications for long-term orbit maintenance,
-station-keeping strategies, and trajectory design for future Enceladus missions.
+Near-rectilinear halo orbits (NRHOs) of the Saturn--Enceladus circular restricted three-body
+problem (CR3BP) are candidate orbits for an Enceladus orbiter. Around the nearly stable members
+of this family lie two-parameter families of quasi-periodic orbits, which offer design freedom
+beyond the periodic orbit itself. We compute these quasi-periodic orbits as Lagrangian invariant
+2-tori of a four-dimensional Poincar\'e map at fixed energy, using the KAM-inspired
+parameterization method of Haro and Luque. A quasi-Newton step solves the invariance equation in
+an approximately symplectic frame by means of cohomological equations, at a cost of
+$O(N\log N)$ operations plus $N$ map evaluations for $N$ grid points. Making the method work for
+tori a few kilometres across, sitting at a distance of order one from the origin, required a set
+of practical ingredients: torus-adapted symplectically normalized coordinates rebuilt along the
+family, scale-free thresholds, an invariance error measured in the sup norm in physical units,
+low-pass filtering, stall detection at the noise floor of the map, and grid refinement. We
+verify the solver on an integrable twist map with exact tori, where it converges quadratically,
+and on the CR3BP, where one Newton step reduces the invariance error of an orbit-fitted torus
+from $1.12\times10^{-10}$ to $5.37\times10^{-13}$ length units (LU). Continuation in the rotation
+vector produces a family of 141 tori around NRHO Id~97 of our NRHO data set, with radii from
+$0.67$ to $9.4$~km on the section and median invariance errors of $3.8\times10^{-13}$ and
+$6.0\times10^{-13}$~LU on the two branches (about $0.1$~mm).
 \end{abstract}
 
-\begin{keywords}
-invariant tori, quasi-periodic orbits, Near-Rectilinear Halo Orbits,
-Circular Restricted Three-Body Problem, parameterization method, KAM theory
-\end{keywords}
+%% ============================================================================
+\section{Introduction}\label{sec:intro}
 
-\begin{AMS}
-37J40, 70F07, 70K43, 37M05
-\end{AMS}
+Enceladus is a high-priority target for future exploration because of the plumes that vent
+material from its subsurface ocean, and orbiter concepts have been studied for it
+\cite{cable2021enceladus}. Its small mass parameter in the Saturn system makes the design of
+orbits around it a genuinely three-body problem, and Saturnian-moon orbits have been explored in
+the CR3BP \cite{davis2018saturnian}. Near-rectilinear halo orbits (NRHOs), the members of the
+$L_1$/$L_2$ halo families that pass close to the smaller primary, have been studied extensively in
+the Earth--Moon system \cite{zimovan2017nrho,zimovanspreen2020,whitley2016options}, where some of
+them are nearly stable. In the Saturn--Enceladus system the corresponding NRHOs are short-period
+orbits (about $11.6$~h for the orbit used below) with a close passage over Enceladus.
 
-\section{Introduction}
-\label{sec:introduction}
+Around a linearly stable periodic orbit, KAM theory predicts a Cantor family of invariant tori
+carrying quasi-periodic orbits (QPOs) \cite{kolmogorov1954,arnold1963proof,moser1962}. QPOs
+enlarge the design space around a baseline periodic orbit, and they have been computed in
+astrodynamics and dynamical systems by several methods: semi-analytic normal-form and
+Fourier-based approaches \cite{jorba1999normal,gomezmondelo2001,jorba2001numerical},
+collocation-type methods for invariant circles of stroboscopic or Poincar\'e maps
+\cite{olikara2016computation,baresi2018qpo,mccarthy2021qpo}, and pseudo-arclength continuation of
+tori \cite{schilder2005continuation}. The parameterization method
+\cite{gonzalez2005kam,haro2006parameterization,haro2016book} takes a different route: it solves
+the invariance equation of the torus by a Newton-like method that exploits the geometry of the
+problem (symplecticity and the Lagrangian character of the torus). In the KAM setting the
+resulting quasi-Newton step reduces to cohomological equations with constant coefficients, which
+are solved diagonally in Fourier space
+\cite{haroluque2016ch4,figueras2017rigorous}. The method has an a-posteriori theory behind it: an
+approximately invariant torus that satisfies explicit non-degeneracy and non-resonance conditions
+is close to a true invariant torus \cite{gonzalez2005kam,figueras2017rigorous}. It has been
+adapted to flows and to partially hyperbolic tori
+\cite{haromondelo2021flow,haroluque2019partially,fernandezmora2024siads,fernandezmora2026convergence},
+and to whiskered tori in periodically perturbed restricted three-body problems
+\cite{kumar2022whiskered}.
 
-Near-Rectilinear Halo Orbits (NRHOs) have emerged as attractive solutions for
-mission design in multi-body dynamical systems \cite{howell2021near}. These
-orbits, which exhibit near-planar geometry with a close approach to a secondary
-body, provide unique vantage points and relatively stable orbital characteristics.
-The Gateway lunar station, for example, is planned to operate in an NRHO around
-the Earth-Moon L2 Lagrange point. NRHOs are also of significant interest for
-missions to Saturn's moon Enceladus, where they enable close-proximity science
-observations while maintaining orbital stability in the Saturn-Enceladus system
-\cite{davis2017trajectory}.
-
-Enceladus has become a high-priority target for astrobiology due to its subsurface
-ocean, active geysers, and potential for harboring life \cite{cable2021enceladus}.
-Proposed missions require long-duration orbits that provide repeated close
-approaches to Enceladus while minimizing propellant requirements for orbit
-maintenance. NRHOs naturally satisfy many of these requirements, but understanding
-the full structure of the phase space around an NRHO is essential for mission
-design flexibility and risk mitigation.
-
-While NRHOs themselves are periodic orbits, a natural question arises: what
-families of quasi-periodic orbits (QPOs) exist in the neighborhood of an NRHO?
-These QPOs, when they form continuous families, sweep out two-dimensional
-invariant manifolds known as Lagrangian tori. Understanding the structure of
-these tori is important for several reasons specific to Enceladus mission design:
-
+This paper applies the parameterization method of Haro and Luque
+\cite{haroluque2016ch4,figueras2017rigorous} to Lagrangian invariant tori around NRHOs of the
+Saturn--Enceladus CR3BP. We work with the Poincar\'e map on the section $q_3=0$ at fixed energy,
+a four-dimensional symplectic map whose Lagrangian 2-tori correspond to quasi-periodic orbits
+with three frequencies (two frequencies and the return time). The contributions are:
 \begin{itemize}
-    \item \textbf{Mission Design Flexibility}: Tori provide a two-parameter
-          continuum of trajectory options near an NRHO, allowing mission designers
-          to optimize for science requirements (e.g., specific observation
-          geometries, lighting conditions, or plume encounters) while maintaining
-          quasi-periodic stability.
-
-    \item \textbf{Station-keeping Strategy}: Knowledge of nearby quasi-periodic
-          orbits enables more efficient station-keeping by targeting natural
-          dynamics rather than fighting them. Small maneuvers can move between
-          different QPOs on the same torus.
-
-    \item \textbf{Long-term Stability Analysis}: The existence and properties of
-          invariant tori characterize the long-term stability of the phase space
-          region around an NRHO, crucial for multi-year mission operations.
-
-    \item \textbf{Contingency Planning}: Alternative orbits on the torus provide
-          backup options if the nominal NRHO becomes untenable due to navigation
-          errors or maneuver failures.
+\item A computational framework for these tori, built on the parameterization-method KAM code of
+  Haro and Luque and on the CR3BP and Poincar\'e-section library of Haro and Mondelo, and adapted
+  to Cartesian tori around an elliptic fixed point of a Poincar\'e map (\cref{sec:model,sec:method}).
+\item A set of practical ingredients that this problem needed and that we found essential for
+  convergence: tori are small (of order $10^{-5}$~LU) and far from the origin, which breaks
+  absolute thresholds, error measures and fixed frames that are harmless for maps on
+  $\T^d\times\R^d$ (\cref{sec:practical,sec:lessons}).
+\item A verification suite: Jacobian and symplecticity checks, an integrable twist map with exact
+  tori, and a free-frequency test (\cref{sec:verification}).
+\item A family of 141 tori around a nearly stable Saturn--Enceladus NRHO, with radii from $0.67$
+  to $9.4$~km and invariance errors at the level of $10^{-13}$~LU (\cref{sec:results}).
 \end{itemize}
+\todo{Check whether QPOs around Saturn--Enceladus NRHOs have been computed before, and adjust
+the wording of the contribution list accordingly.}
 
-The computation of invariant tori in Hamiltonian systems is a classical problem
-in dynamical systems theory, with connections to KAM (Kolmogorov-Arnold-Moser)
-theory \cite{kolmogorov1954conservation,arnold1963proof,moser1962invariant}.
-However, practical numerical methods for computing such tori in realistic astrodynamics
-problems have only recently become tractable. The parameterization method developed
-by Haro, de la Llave, and collaborators
-\cite{haro2006parameterization,haro2016parameterization} provides an efficient
-computational framework that combines rigorous mathematical foundations with
-practical numerical algorithms.
+%% ============================================================================
+\section{Model}\label{sec:model}
 
-In this paper, we apply the parameterization method to compute Lagrangian tori
-around NRHOs in the Saturn-Enceladus system, motivated by current interest in
-Enceladus exploration missions \cite{cable2021enceladus}. Our contributions include:
-
-\begin{enumerate}
-    \item Development of a computational framework implementing the Haro-Luque
-          parameterization method, combining C++ (high-performance numerical
-          computation) with Julia (high-level analysis and visualization),
-          specifically adapted for NRHO mission applications in the CR3BP.
-
-    \item First application of the parameterization method to compute invariant
-          tori around NRHOs in the Saturn-Enceladus system, demonstrating
-          feasibility for realistic mission design scenarios.
-
-    \item Analysis of numerical challenges encountered in the implementation,
-          including grid resolution requirements, Fourier truncation effects,
-          and convergence properties of the quasi-Newton scheme.
-
-    \item Characterization of the computed tori and discussion of implications
-          for Enceladus mission design, including station-keeping strategies,
-          trajectory flexibility, and long-term stability analysis.
-\end{enumerate}
-
-The remainder of this paper is organized as follows. Section~\ref{sec:background}
-provides mathematical background on the CR3BP, invariant tori, and the parameterization
-method. Section~\ref{sec:method} describes our numerical implementation in detail.
-Section~\ref{sec:results} presents computational results for NRHOs in different
-systems. Section~\ref{sec:conclusion} concludes with a discussion of implications
-for mission design and future work.
-
-\section{Mathematical Background}
-\label{sec:background}
-
-\subsection{The Circular Restricted Three-Body Problem}
-
-The Circular Restricted Three-Body Problem (CR3BP) describes the motion of a
-massless particle under the gravitational influence of two massive bodies (primaries)
-that move in circular orbits around their common center of mass. In a rotating
-coordinate frame centered at the barycenter, the equations of motion are:
-
-\begin{equation}
-\label{eq:cr3bp}
-\begin{aligned}
-    \ddot{x} - 2\dot{y} &= \frac{\partial U}{\partial x}, \\
-    \ddot{y} + 2\dot{x} &= \frac{\partial U}{\partial y}, \\
-    \ddot{z} &= \frac{\partial U}{\partial z},
-\end{aligned}
+\subsection{The CR3BP in Hamiltonian form}
+We use the CR3BP in the rotating frame with the conventions of the Barcelona RTBP library
+(normalized units, the large primary at $(\mu,0,0)$ and the small one at $(\mu-1,0,0)$). With
+positions $q=(q_1,q_2,q_3)$ and momenta $p=(p_1,p_2,p_3)$ the Hamiltonian is
+\begin{equation}\label{eq:ham}
+H(q,p) = \tfrac12\left(p_1^2+p_2^2+p_3^2\right) + q_2 p_1 - q_1 p_2 - \frac{1-\mu}{r_1} - \frac{\mu}{r_2},
 \end{equation}
+with $r_1 = |q-(\mu,0,0)|$ and $r_2 = |q-(\mu-1,0,0)|$ \cite{szebehely1967,koon2011}. For
+Saturn--Enceladus we use
+\[
+\mu = 1.901109735892602\times10^{-7}, \qquad 1~\mathrm{LU} = 238042~\mathrm{km}
+\]
+(the length unit is the Saturn--Enceladus distance). The equations of motion and their
+first variational equations are integrated with a Runge--Kutta--Fehlberg 7(8) method
+\cite{fehlberg1968rk78} with local tolerance $4\times10^{-14}$.
+\todo{Confirm that rk78vp.c is the Fehlberg 7(8) pair, and give the source of
+\nolinkurl{data/initial_conditions/NRHO_L2.csv} (\nolinkurl{docs/PROVENANCE.md} lists it as open).}
 
-where $U(x,y,z)$ is the pseudo-potential:
-
-\begin{equation}
-U(x,y,z) = \frac{1}{2}(x^2 + y^2) + \frac{1-\mu}{r_1} + \frac{\mu}{r_2},
+\subsection{Poincar\'e section at fixed energy}
+We fix the energy $H=h$ and take the section $\Sigma = \{q_3 = 0,\ p_3>0,\ H=h\}$. On $\Sigma$ we
+use the coordinates $z=(q_1,q_2,p_1,p_2)$ and recover $p_3>0$ from \eqref{eq:ham}:
+\begin{equation}\label{eq:p3}
+p_3(z)^2 = 2\left(h - q_2 p_1 + q_1 p_2 + \frac{1-\mu}{r_1} + \frac{\mu}{r_2}\right) - p_1^2 - p_2^2 .
 \end{equation}
+Let $\nu(z) = (q_1,q_2,0,p_1,p_2,p_3(z))$ lift a point of the section to $\R^6$, and let $\pi$ be
+the projection back to $(q_1,q_2,p_1,p_2)$. The reduced map is $F = \pi\circ P\circ\nu$, where
+$P$ is the first-return map of the flow to $\{q_3=0\}$ in the direction of increasing $q_3$. Since
+$\Sigma$ lies in an energy level, $F$ is symplectic for the standard form
+$\Omega = \left(\begin{smallmatrix} 0 & -I_2\\ I_2 & 0\end{smallmatrix}\right)$ in $z$ \cite[Remark~2.4.5, p.~8]{haromondelo2021flow}; on a simply connected domain it
+is also exact symplectic.
 
-with $\mu$ being the mass ratio of the secondary primary, and
-$r_1 = \sqrt{(x+\mu)^2 + y^2 + z^2}$ and
-$r_2 = \sqrt{(x-1+\mu)^2 + y^2 + z^2}$ representing distances to the two primaries.
-
-The CR3BP admits a Hamiltonian formulation with Hamiltonian function:
-
-\begin{equation}
-H(x,y,z,p_x,p_y,p_z) = \frac{1}{2}(p_x^2 + p_y^2 + p_z^2) + yp_x - xp_y - U(x,y,z).
+\subsection{Differential of the map}
+Let $\Phi$ be the state transition matrix from $\nu(z)$ to the return point $x_\tau = P(\nu(z))$,
+$f$ the vector field and $g(x)=q_3$ the section function. The differential of the return map is
+\begin{equation}\label{eq:DP}
+DP = \Phi + f(x_\tau)\, D\tau^{\!\top}, \qquad
+D\tau^{\!\top} = -\frac{\nabla g^{\top}\Phi}{\nabla g\cdot f(x_\tau)},
 \end{equation}
+\cite[Sec.~7, eqs.~(40) and (42), pp.~17--18]{wilczak2007lohner}, and
+$DF(z) = \pi\, DP\, D\nu(z)$, where $D\nu$ contains the gradient of $p_3$ from \eqref{eq:p3}
+(by the chain rule, $\nabla p_3 = \nabla(p_3^2)/(2p_3)$). The return to the section is refined by
+Newton's method on $q_3$ to a tolerance of $10^{-14}$.
 
-This Hamiltonian is autonomous and the system has one conserved quantity, the
-Jacobi constant $C = -2H$.
+\subsection{NRHOs as fixed points}
+A periodic orbit that crosses $\Sigma$ once per period is a fixed point $z^*$ of $F$. We compute it
+by Newton's method on $F(z)-z=0$ from the initial conditions of our NRHO table. The eigenvalues of
+$DF(z^*)$ come in pairs $\lambda,1/\lambda$ (and conjugates); for the nearly stable NRHOs used
+here both pairs lie on the unit circle, $\lambda_j = e^{\pm 2\pi i \rho_j}$, and we call
+$\rho = (\rho_1,\rho_2)$ the linear rotation numbers of the NRHO. Invariant tori of $F$ around
+$z^*$ are Cartesian: they are graphs over neither the angles nor the positions, and the
+parameterization $K:\T^2\to\R^4$ is fully periodic (no angle lift).
 
-\subsection{Near-Rectilinear Halo Orbits}
+%% ============================================================================
+\section{Method}\label{sec:method}
 
-Near-Rectilinear Halo Orbits are periodic solutions of the CR3BP that belong to
-the family of halo orbits bifurcating from the planar Lyapunov family at the
-collinear Lagrange points $L_1$ or $L_2$. NRHOs are characterized by:
-
-\begin{itemize}
-    \item A close approach to the secondary body (e.g., the Moon in the Earth-Moon system)
-    \item Nearly planar geometry with small out-of-plane excursions
-    \item Relatively stable dynamical characteristics compared to other halo orbits
-\end{itemize}
-
-A periodic orbit with period $T$ satisfies $\mathbf{x}(t+T) = \mathbf{x}(t)$ for
-all $t$, where $\mathbf{x} = (x,y,z,p_x,p_y,p_z) \in \RR^6$ represents the phase
-space state. We denote the Poincaré map associated with the flow by
-$\Phi: \RR^6 \to \RR^6$, which maps initial conditions to their state after one
-period.
-
-\subsection{Invariant Tori and Quasi-Periodic Orbits}
-
-An invariant $d$-dimensional torus is a $d$-dimensional manifold $\mathcal{T}$
-diffeomorphic to $\mathbb{T}^d = (\RR/2\pi\mathbb{Z})^d$ that is invariant under
-the flow: if $\mathbf{x}(0) \in \mathcal{T}$, then $\mathbf{x}(t) \in \mathcal{T}$
-for all $t$.
-
-In this work, we focus on Lagrangian tori, which are 2-dimensional tori
-($d=2$) embedded in the 6-dimensional phase space. Such a torus can be parameterized
-by a smooth map:
-
-\begin{equation}
-K: \mathbb{T}^2 \to \RR^6, \quad \boldsymbol{\theta} = (\theta_1, \theta_2)
-   \mapsto K(\boldsymbol{\theta}),
+\subsection{Invariance equation}
+We look for $K:\T^2\to\R^4$ and $\omega\in\R^2$ such that
+\begin{equation}\label{eq:inv}
+E(\theta) := F(K(\theta)) - K(\theta+\omega) = 0
 \end{equation}
-
-where $\boldsymbol{\theta}$ are angular coordinates on the torus.
-
-The torus is invariant under the flow if there exist rotation frequencies
-$\boldsymbol{\omega} = (\omega_1, \omega_2) \in \RR^2$ such that:
-
-\begin{equation}
-\label{eq:invariance}
-\Phi^t(K(\boldsymbol{\theta})) = K(\boldsymbol{\theta} + \boldsymbol{\omega} t),
+\cite[Sec.~2.1, eq.~(4), p.~5]{figueras2017rigorous}, \cite{fontich2009kam}. With $\omega$
+irrational, an invariant torus is Lagrangian, $DK^\top \Omega\, DK = 0$
+\cite{figueras2017rigorous}. We represent $K$ on an $n_1\times n_2$ grid of $\T^2$ and by its
+discrete Fourier transform, and we measure the error by the sup norm over the grid in physical
+coordinates,
+\begin{equation}\label{eq:err}
+\err(K) = \max_{j}\ \| E(\theta_j) \|_\infty ,
 \end{equation}
+as in \cite[Alg.~3.6.1, p.~29]{haromondelo2021flow} (see \cref{sec:practical}).
 
-where $\Phi^t$ denotes the time-$t$ flow map. For a fixed time $\tau$ (often chosen
-as the period of the underlying NRHO), this becomes:
-
-\begin{equation}
-\label{eq:invariance_discrete}
-\Phi^\tau(K(\boldsymbol{\theta})) = K(\boldsymbol{\theta} + \boldsymbol{\omega}),
+\subsection{Symplectic frame, torsion and the quasi-Newton step}
+We follow Figueras, Haro and Luque \cite{figueras2017rigorous}; see also
+\cite{haroluque2016ch4,haro2016book}. Let $L(\theta)=DK(\theta)$. Given a positive definite
+metric $G$, the normal frame
+\begin{equation}\label{eq:frame}
+N = L A - \Omega^{-1} G L B, \qquad B = \left(L^\top G L\right)^{-1}, \qquad
+A = \tfrac12\, B^\top L^\top G\, \Omega^{-1} G\, L B ,
 \end{equation}
-
-which we call the \emph{invariance equation}.
-
-Trajectories on the torus are quasi-periodic if the rotation frequencies are
-rationally independent (i.e., $\boldsymbol{\omega}$ satisfies the Diophantine
-condition). In this case, each trajectory densely fills the torus.
-
-\subsection{The Parameterization Method}
-
-The parameterization method, developed by Haro, de la Llave, and collaborators
-\cite{haro2006parameterization,haro2016parameterization}, provides a constructive
-approach to computing invariant tori. The key idea is to represent the parameterization
-$K(\boldsymbol{\theta})$ as a Fourier series:
-
-\begin{equation}
-K(\boldsymbol{\theta}) = \sum_{\mathbf{k} \in \mathbb{Z}^2} \hat{K}_{\mathbf{k}}
-e^{i\mathbf{k} \cdot \boldsymbol{\theta}},
+(\cite[eq.~(32), p.~14]{haromondelo2021flow}, written as in our code) makes
+$P(\theta)=(L(\theta)\ N(\theta))$ symplectic up to $O(E)$. In this frame the linearized dynamics
+is approximately block triangular,
+$P(\theta+\omega)^{-1} DF(K(\theta)) P(\theta) \approx
+\left(\begin{smallmatrix} I & T(\theta)\\ 0 & I\end{smallmatrix}\right)$, with the torsion
+\begin{equation}\label{eq:torsion}
+T(\theta) = N(\theta+\omega)^\top\, \Omega\, DF(K(\theta))\, N(\theta)
 \end{equation}
-
-where $\hat{K}_{\mathbf{k}} \in \CC^6$ are the Fourier coefficients.
-
-Given an approximate parameterization $K$ that nearly satisfies the invariance
-equation \eqref{eq:invariance_discrete}, the method constructs a correction to
-improve the approximation. The correction is found by linearizing the invariance
-equation and solving a system of cohomological equations.
-
-\subsubsection{Newton Correction Scheme}
-
-Define the \emph{invariance error}:
-
-\begin{equation}
-E(\boldsymbol{\theta}) = \Phi^\tau(K(\boldsymbol{\theta})) -
-K(\boldsymbol{\theta} + \boldsymbol{\omega}).
+\cite[eqs.~(8)--(13), p.~6]{figueras2017rigorous}. Writing the correction as
+$\Delta K = P\xi$ in the linearized equation
+\cite[eq.~(25), p.~9]{figueras2017rigorous}
+\begin{equation}\label{eq:lin}
+DF(K(\theta))\,\Delta K(\theta) - \Delta K(\theta+\omega) = -E(\theta)
 \end{equation}
-
-We seek a correction $\xi(\boldsymbol{\theta})$ such that
-$K_{\text{new}}(\boldsymbol{\theta}) = K(\boldsymbol{\theta}) + \xi(\boldsymbol{\theta})$
-better satisfies the invariance equation.
-
-The correction is decomposed into components along the tangent and normal bundles
-of the torus:
-
-\begin{equation}
-\xi(\boldsymbol{\theta}) = L(\boldsymbol{\theta}) \cdot \xi_L(\boldsymbol{\theta})
-+ N(\boldsymbol{\theta}) \cdot \xi_N(\boldsymbol{\theta}),
+and dropping $O(E)$ terms gives, with
+$\eta_L = -N(\theta+\omega)^\top\Omega E$ and $\eta_N = L(\theta+\omega)^\top\Omega E$, a
+triangular system of cohomological equations. Its solution is
+\cite[Lemma~2.9, eqs.~(32)--(34), p.~10]{figueras2017rigorous}
+\begin{equation}\label{eq:xi}
+\xi_N = \mathcal{R}(\eta_N) + \xi_N^0, \qquad
+\xi_L = \mathcal{R}(\eta_L - T\xi_N) + \xi_L^0, \qquad
+\xi_N^0 = \avg{T}^{-1}\avg{\eta_L - T\mathcal{R}(\eta_N)},
 \end{equation}
-
-where:
-\begin{itemize}
-    \item $L(\boldsymbol{\theta}) = \frac{\partial K}{\partial \boldsymbol{\theta}}$
-          is the $6 \times 2$ tangent frame (derivatives of $K$ with respect to
-          the angular variables),
-    \item $N(\boldsymbol{\theta})$ is a $6 \times 2$ normal frame satisfying
-          $L^T \Omega N = 0$ (symplectic orthogonality), where $\Omega$ is the
-          symplectic form.
-\end{itemize}
-
-The corrections $\xi_L$ and $\xi_N$ are found by solving cohomological equations
-in Fourier space:
-
-\begin{equation}
-\label{eq:cohomological}
-\begin{aligned}
-    \boldsymbol{\omega} \cdot \nabla \xi_N(\boldsymbol{\theta}) &= \eta_N(\boldsymbol{\theta}), \\
-    \boldsymbol{\omega} \cdot \nabla \xi_L(\boldsymbol{\theta}) &= \eta_L(\boldsymbol{\theta})
-    - T(\boldsymbol{\theta}) \xi_N(\boldsymbol{\theta}),
-\end{aligned}
+where $\mathcal{R}v$ is the zero-average solution of $u(\theta)-u(\theta+\omega) = v(\theta)-\avg{v}$,
+\begin{equation}\label{eq:cohom}
+\widehat{u}_k = \frac{\widehat{v}_k}{1-e^{2\pi i k\cdot\omega}}, \qquad k\neq 0
 \end{equation}
+\cite[eq.~(20), p.~7]{figueras2017rigorous}, and $\xi_L^0$ (a phase) is set to zero. The
+non-degeneracy (twist) condition is $\det\avg{T}\neq 0$ \cite[Lemma~2.9, p.~10]{figueras2017rigorous};
+for an invariant Lagrangian torus $\avg{T}$ is symmetric, which is a useful diagnostic. The step
+converges quadratically \cite[Lemma~2.8, eq.~(31), p.~10]{figueras2017rigorous}. Every operation
+is either pointwise on the grid or diagonal in Fourier space, so a step costs $O(N\log N)$
+operations with $N=n_1n_2$, plus $N$ evaluations of $F$ and $DF$. In the CR3BP the map
+evaluations dominate.
 
-where $\eta_N$ and $\eta_L$ are projections of the invariance error onto the
-normal and tangent bundles, and $T$ is the \emph{twist matrix}.
+A frequency-adjusting variant fixes $\xi_N^0=0$ and corrects $\omega$ instead, with
+$\Delta\omega = -\avg{\eta_L - T\mathcal{R}(\eta_N)}$, the solvability condition of the tangent
+row; this is in the spirit of \cite[Sec.~6.1, eqs.~(6.1)--(6.6), p.~45]{haroluque2019partially}
+and needs no inverse of $\avg{T}$. We use it only as a test (\cref{sec:verification}); the family
+is computed at fixed $\omega$.
 
-In Fourier space, the operator $\boldsymbol{\omega} \cdot \nabla$ becomes
-multiplication by $i \mathbf{k} \cdot \boldsymbol{\omega}$, so the cohomological
-equations reduce to:
+\subsection{Practical ingredients}\label{sec:practical}
+The tori of interest have radii of $10^{-5}$ to $10^{-4}$~LU, sit at $|z|\approx 1$, and are very
+eccentric in the original coordinates (the entries of $DF$ are of order 27). The following
+ingredients were needed for the quasi-Newton step to converge on them. \Cref{sec:lessons}
+discusses why.
 
-\begin{equation}
-\hat{\xi}_N(\mathbf{k}) = \frac{\hat{\eta}_N(\mathbf{k})}{i \mathbf{k} \cdot \boldsymbol{\omega}},
-\end{equation}
+\paragraph{Torus-adapted symplectic coordinates.} We solve for $K$ in local coordinates
+$z = z_c + M\zeta$, where $z_c$ is the average of the torus and the columns of $M$ are its
+first-harmonic axes, $a_j = 2\,\mathrm{Re}\,\widehat{K}_{e_j}$ and
+$b_j = -2\,\mathrm{Im}\,\widehat{K}_{e_j}$. Each pair is normalized so that
+$a_j^\top\Omega b_j = -1$, and then all columns are rescaled so that the torus is close to a
+product of circles of radius one in $\zeta$. The change is affine, so the map and its Jacobian
+become $\tilde F(\zeta) = M^{-1}(F(z_c+M\zeta)-z_c)$ and $D\tilde F = M^{-1}DF\,M$, and the
+symplectic form becomes the constant $M^\top\Omega M$ divided by the square of the rescaling
+factor, close to the standard form. In these coordinates we use the Euclidean metric $G=I$ in
+\eqref{eq:frame}. This is the familiar idea of working in coordinates adapted to the linearization
+(a symplectic Floquet-like normalization), here taken from the torus itself. Because the torus
+changes shape and size along the family, the coordinates are rebuilt from every accepted torus
+during continuation.
 
-which involves dividing by small numbers when $\mathbf{k} \cdot \boldsymbol{\omega}
-\approx 0$ (the small divisor problem). This is where the Diophantine condition
-on $\boldsymbol{\omega}$ becomes essential for convergence.
+\paragraph{Scale-free thresholds.} Coefficients of the right-hand side of \eqref{eq:cohom} are
+skipped only if they are small relative to the largest one, not below an absolute threshold.
 
-\section{Numerical Implementation}
-\label{sec:method}
+\paragraph{Nyquist modes.} On an even grid the Nyquist coefficient has no conjugate partner.
+Differentiation, translation by $\omega$, and \eqref{eq:cohom} then produce a non-Hermitian
+spectrum, i.e.\ complex values in real space. We set these modes to zero in all three operations
+and when the grid is refined, and we drop the (round-off level) imaginary part of $K$ after each
+step.
 
-Our implementation consists of two main components:
-\begin{enumerate}
-    \item \textbf{C++ core}: High-performance numerical computation of the KAM
-          torus correction scheme, Poincaré map evaluations, and Fourier transforms.
-    \item \textbf{Julia interface}: High-level analysis, initial condition generation,
-          and visualization.
-\end{enumerate}
+\paragraph{Shifted normal frame.} The frame at $\theta+\omega$ needed in $\eta_L$ and
+\eqref{eq:torsion} is computed by applying \eqref{eq:frame} pointwise to the Fourier-shifted $L$
+(and metric and form), not by shifting $N$: the spectrum of $N$, which contains
+$(L^\top G L)^{-1}$, decays more slowly than that of $L$.
 
-\subsection{Algorithm Overview}
+\paragraph{Error measure.} The error \eqref{eq:err} is the maximum over the grid in physical
+coordinates, $E_{\mathrm{phys}} = M E$. The $\ell^1$ norm of all Fourier coefficients, used in an
+earlier version of the code, sums the noise of every coefficient and grows with the grid size.
 
-The main algorithm proceeds as follows:
+\paragraph{Low-pass filter.} After each step we set to zero all Fourier coefficients with
+$|k_j|\ge n_j/4$ in some direction. Haro and Mondelo report ``divergence after apparent
+convergence'' even with tails of the order of machine epsilon, and prevent it by zeroing the upper
+half of the DFT after each Newton iteration \cite[pp.~27--28]{haromondelo2021flow}; see also
+\cite{kumar2022whiskered}. The relative error of the DFT coefficients grows with $|k|$, and the
+small divisors in \eqref{eq:cohom} amplify it.
 
-\begin{algorithm}
-\caption{KAM Torus Computation via Parameterization Method}
-\label{alg:kam_torus}
-\begin{algorithmic}[1]
-\REQUIRE Initial guess $K_0(\boldsymbol{\theta})$, rotation frequencies
-         $\boldsymbol{\omega}$, tolerance $\epsilon$
-\ENSURE Invariant torus parameterization $K(\boldsymbol{\theta})$
-\STATE $K \gets K_0$
-\WHILE{$\norm{E} > \epsilon$}
-    \STATE \textbf{Step 0:} Check Fourier tail size; increase grid resolution if needed
-    \STATE \textbf{Step 1:} Compute invariance error $E(\boldsymbol{\theta}) =
-           \Phi^\tau(K(\boldsymbol{\theta})) - K(\boldsymbol{\theta} + \boldsymbol{\omega})$
-    \IF{$\norm{E} < \epsilon$}
-        \RETURN $K$
-    \ENDIF
-    \STATE \textbf{Step 2:} Construct symplectic frame $(L, N)$
-    \STATE \textbf{Step 3:} Solve cohomological equations for corrections
-           $\xi_L$, $\xi_N$
-    \STATE \textbf{Step 4:} Update parameterization:
-           $K \gets K + L \cdot \xi_L + N \cdot \xi_N$
-\ENDWHILE
-\end{algorithmic}
-\end{algorithm}
+\paragraph{Stall detection and the map-noise floor.} The error can only be reduced to the
+accuracy of the map evaluation. Beyond that point further steps amplify the noise through the
+small divisors and the iteration drifts away. The Newton loop keeps the best torus, stops when a
+step fails to reduce the error by at least $10\%$, and accepts the best torus if its error is below
+a floor $\epsilon_{\mathrm{floor}}$ (we use $10^{-11}$~LU, about $2.4$~mm); the strict tolerance
+is $10^{-12}$~LU.
 
-\subsection{Poincaré Map Evaluation}
+\paragraph{Grid refinement.} If Newton stalls above $\epsilon_{\mathrm{floor}}$, the torus is
+interpolated to a grid twice as fine in each direction (zero padding) and Newton continues, once
+per loop. This is step 5 of \cite[Alg.~3.6.1, p.~30]{haromondelo2021flow}: ``if
+$\mathrm{err}(T')>\varepsilon_1$, double $N$''.
 
-The Poincaré map $\Phi^\tau$ is computed by numerical integration of the CR3BP
-equations \eqref{eq:cr3bp} using an 8th-order Runge-Kutta method with adaptive
-step size control. For each grid point $\boldsymbol{\theta}_k$ on the discretized
-torus, we:
+\paragraph{Continuation.} We continue tori at fixed energy in the rotation vector
+\cite[Sec.~3.5, Alg.~3.5.4]{haromondelo2021flow}, along a straight line
+$\omega(\varepsilon) = \omega_s + \varepsilon\,\Delta\omega$. The predictor is the secant through
+the last two tori (Haro and Mondelo use a tangent predictor). The step control follows
+\cite[Alg.~3.6.1, pp.~29--30]{haromondelo2021flow}: halve the step on failure and, after a success,
+multiply it by $n_{\mathrm{des}}/n_{\mathrm{it}}$ with $n_{\mathrm{des}}=4$ desired iterations
+(clamped to $[0.5,2]$); stop when the step falls below $10^{-3}$ of the initial one or $\varepsilon$
+reaches a prescribed limit. Since Lagrangian tori of a 4D map at fixed energy form a two-parameter
+(Cantor) family indexed by $\omega$, a line in $\omega$ selects a one-parameter path through it.
 
-\begin{enumerate}
-    \item Extract the phase space state $\mathbf{x}_k = K(\boldsymbol{\theta}_k)$
-    \item Integrate forward in time for one NRHO period $\tau$
-    \item Optionally compute the monodromy matrix (state transition matrix) for
-          stability analysis
-\end{enumerate}
+\subsection{Initial guesses}\label{sec:guess}
+Initial tori come from orbits of $F$. We start at $z^* + a_1\mathrm{Re}\,V_1 + a_2\mathrm{Re}\,V_2$,
+where $V_j$ are the elliptic eigenvectors of $DF(z^*)$, iterate the map, and compute the rotation
+numbers of the orbit from its complex eigen-coordinates: a linear fit of the unwrapped angle,
+refined by maximizing the Hann-windowed Fourier amplitude as in Laskar's NAFF
+\cite{laskar1990chaotic,laskar1993naff}. We then fit the Fourier coefficients of $K$ to the orbit
+by least squares, $z_m \approx K(m\rho)$, with $|m_i|\le 10$. The same tools give a frequency map
+of the neighborhood of the NRHO, with the drift of the rotation numbers between the two halves of
+an orbit as a regularity indicator \cite{laskar1993naff}.
 
-\subsection{Fourier Transform and Grid Resolution}
+%% ============================================================================
+\section{Verification}\label{sec:verification}
 
-We represent the parameterization $K(\boldsymbol{\theta})$ on a uniform
-$n_1 \times n_2$ grid in $\boldsymbol{\theta}$-space. Fast Fourier Transforms
-(FFTs) are used to convert between real-space and Fourier-space representations:
+\paragraph{Map and Jacobian.} The analytic $DF$ agrees with central finite differences
+($h=10^{-7}$) to a relative $5.7\times10^{-7}$, and $DF$ is symplectic for the standard form to
+$5\times10^{-10}$. \todo{State exactly which quantity gave $5\times10^{-10}$ (presumably
+$\|DF^\top\Omega DF-\Omega\|$) and at which point.} The second difference
+$|F(z+hv)-2F(z)+F(z-hv)|/h^2$ at the fixed point of NRHO Id~72 is constant ($2.2\times10^5$) from
+$h=10^{-3}$ down to $3\times10^{-9}$, so the map is smooth down to below $10^{-13}$; it also gives
+a nonlinearity length scale of $1/(2.2\times10^5)\approx 5\times10^{-6}$~LU, about 1~km. Newton's
+method for the fixed point of NRHO Id~72 converges quadratically,
+$|F(z)-z| = 3.9\times10^{-7},\ 2.5\times10^{-11},\ 2.7\times10^{-14}$; this orbit is
+elliptic-elliptic with $\rho = (0.343616643, 0.173806970)$.
 
-\begin{itemize}
-    \item Forward FFT: $K(\boldsymbol{\theta}) \to \hat{K}(\mathbf{k})$
-    \item Inverse FFT: $\hat{K}(\mathbf{k}) \to K(\boldsymbol{\theta})$
-\end{itemize}
+\paragraph{Integrable twist map.} The map that rotates each plane $(q_j,p_j)$ by the angle
+$2\pi\big(\rho_j + \sum_k b_{jk} I_k\big)$, $I_k = (q_k^2+p_k^2)/2$, is the time-one map of
+$H = 2\pi\rho\cdot I + \pi I^\top b I$. It is symplectic for the same form as the CR3BP map, and its
+tori are known exactly: $K_j(\theta) = \sqrt{2I^*_j}\,(\cos 2\pi\theta_j, \sin 2\pi\theta_j)$ with
+$\rho + bI^* = \omega$. Like the NRHO tori, they are Cartesian tori around an elliptic fixed point,
+so this map exercises the same code path. Starting from the exact torus with a $1\%$ error in the
+actions plus a $10^{-4}\cos 2\pi(\theta_1+\theta_2)$ perturbation, on a $32\times32$ grid, the
+error decreases quadratically (\cref{tab:twist}). The averaged torsion is symmetric,
+$\avg{T} = \left(\begin{smallmatrix}-0.1592 & -0.0478\\ -0.0478 & -0.0796\end{smallmatrix}\right)$.
+A frame built from a constant transversal field (the momentum directions) instead of
+\eqref{eq:frame} fails on this map ($\avg{T}\sim 10^{26}$): around an elliptic point,
+$DK^\top\Omega N_0$ is singular where $\sin 2\pi\theta_j = 0$, violating the transversality
+condition \cite[eq.~(7), p.~6]{figueras2017rigorous}.
 
-The grid resolution is adaptively chosen based on the Fourier tail criterion.
-We define the tail:
-
-\begin{equation}
-\text{tail}_i = \frac{\sum_{|k_i| > n_i/4} |\hat{K}_{\mathbf{k}}|}
-                     {\sum_{\mathbf{k}} |\hat{K}_{\mathbf{k}}|},
-\end{equation}
-
-which measures the fraction of Fourier energy in high-frequency modes. If
-$\text{tail}_i > \text{tol}_{\text{tail}}$ (typically $10^{-12}$), we double
-the grid resolution in dimension $i$.
-
-\subsection{Normal Frame Construction}
-
-Three methods are available for constructing the normal frame $N$:
-
-\begin{enumerate}
-    \item \textbf{Case 1:} Using a user-supplied initial normal frame $N_0$:
-    \begin{equation}
-    N = L \cdot A + N_0 \cdot B,
-    \end{equation}
-    where $A$ and $B$ are chosen to satisfy symplectic orthogonality.
-
-    \item \textbf{Case 2:} Using a Riemannian metric $g$ (default):
-    \begin{equation}
-    N = L \cdot A - \Omega^{-1} g L B,
-    \end{equation}
-    where $g$ can be chosen based on the Hamiltonian structure.
-
-    \item \textbf{Case 3:} Direct construction from metric:
-    \begin{equation}
-    N = g^{-1} \Omega L B.
-    \end{equation}
-\end{enumerate}
-
-In our implementation, we use Case 2 with the natural metric induced by the
-phase space structure.
-
-\subsection{Cohomological Equation Solver}
-
-The cohomological equations \eqref{eq:cohomological} are solved in Fourier space.
-For each mode $\mathbf{k} \neq \mathbf{0}$:
-
-\begin{equation}
-\hat{\xi}_N(\mathbf{k}) = \frac{\hat{\eta}_N(\mathbf{k})}{2\pi i \mathbf{k} \cdot \boldsymbol{\omega}}.
-\end{equation}
-
-The average ($\mathbf{k} = \mathbf{0}$) component requires solving:
-
-\begin{equation}
-\bar{T} \bar{\xi}_N = \bar{\eta}_L,
-\end{equation}
-
-where $\bar{T}$ is the average of the twist matrix over the torus. This is solved
-using QR decomposition for numerical stability.
-
-\subsection{Convergence and Stopping Criteria}
-
-The iteration terminates when:
-\begin{enumerate}
-    \item $\norm{E}_{\text{Fourier}} < \text{tol}_{\text{inva}}$
-          (typically $10^{-12}$), or
-    \item The maximum number of iterations is reached, or
-    \item The correction norm exceeds a threshold (indicating divergence), or
-    \item The twist matrix becomes singular (indicating breakdown of hyperbolicity).
-\end{enumerate}
-
-\section{Numerical Results}
-\label{sec:results}
-
-\subsection{Saturn-Enceladus NRHO}
-
-We first consider an NRHO in the Saturn-Enceladus system with mass parameter
-$\mu = 1.901109735892602 \times 10^{-7}$. The NRHO has Jacobi constant
-$C = -1.500017416209690$ and period $\tau \approx TODO$ (in normalized units).
-
-\subsubsection{Initial Guess Generation}
-
-The initial guess for the torus parameterization is generated using the Julia
-code, starting from the periodic NRHO solution. We use a linear approximation
-based on the eigenvectors of the monodromy matrix corresponding to the center
-subspace.
-
-\subsubsection{Grid Resolution and Fourier Tails}
-
-The computation begins with a $32 \times 32$ grid. Table~\ref{tab:grid_progression}
-shows the adaptive grid refinement process:
-
-\begin{table}[h]
+\begin{table}[t]
 \centering
-\caption{Adaptive grid resolution for Saturn-Enceladus NRHO torus}
-\label{tab:grid_progression}
-\begin{tabular}{@{}cccc@{}}
+\caption{Quasi-Newton iteration on the integrable twist map, $32\times32$ grid, fixed $\omega$.
+Sup-norm error \eqref{eq:err} with the current code; the linearized residual and the frame check
+$|L^\top\Omega N + I|$ were measured with an earlier version of the code (Fourier $\ell^1$ norm).}
+\label{tab:twist}
+\begin{tabular}{cccc}
 \toprule
-Grid Size & Tail$_1$ & Tail$_2$ & Status \\
+iteration & $\err(K)$ & linearized residual & frame check \\
 \midrule
-$32 \times 32$   & $2.19 \times 10^{2}$ & $1.87 \times 10^{2}$ & Insufficient \\
-$64 \times 64$   & $1.44$               & $5.60$               & Insufficient \\
-$128 \times 128$ & $0.00$               & $0.00$               & Acceptable \\
+1 & $2.1\times10^{-4}$  & $4.4\times10^{-7}$  & $1.2\times10^{-7}$ \\
+2 & $1.3\times10^{-6}$  & $2.3\times10^{-11}$ & $3.7\times10^{-12}$ \\
+3 & $7.1\times10^{-11}$ & $1.3\times10^{-15}$ & $4.4\times10^{-13}$ \\
+4 & $1.1\times10^{-16}$ & ---                 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The tails converge to negligible values at $128 \times 128$ resolution, indicating
-that this grid size adequately resolves the torus geometry.
+\paragraph{Free-frequency step.} Starting from a twist-map torus with $1\%$ too much action, the
+frequency-adjusting step converges in two steps
+($2.2\times10^{-4}\to2.5\times10^{-7}\to5.3\times10^{-13}$) and returns
+$\Delta\omega = (1.6000107\times10^{-4},\ 1.2999998\times10^{-4})$, against the exact value
+$0.01\,bI^* = (1.6\times10^{-4},\ 1.3\times10^{-4})$.
 
-\subsubsection{KAM Correction Convergence}
+\paragraph{Independent reference solver.} A dense collocation Newton method (Julia) solves the
+full linearized invariance equation on the grid, with two phase conditions, by least squares. It
+is a true Newton step at a cost of $O((4N)^3)$. On an orbit-fitted torus around NRHO Id~72
+($32\times32$, fixed $\omega$) it reduced the error from $4.8\times10^{-10}$ to
+$4.9\times10^{-12}$, which confirmed that the map, its Jacobian and the formulation are mutually
+consistent at a time when the quasi-Newton solver still diverged.
 
-The initial KAM correction step successfully computed and applied a correction
-to the approximate torus. The key metrics from this correction are:
+%% ============================================================================
+\section{Results}\label{sec:results}
 
+\subsection{Choice of the NRHO}
+Our first target, NRHO Id~72 of our data set (period $0.4895$~days), is elliptic-elliptic but
+close to a $1{:}2$ resonance: $\rho_1-2\rho_2 = -0.0040$ at the fixed point. The frequency map of
+its neighborhood shows that orbits with amplitude $a_1\gtrsim2\times10^{-5}$~LU along the first
+eigendirection lock to the $1{:}2$ resonance ($\rho_1-2\rho_2=0$ to five digits), orbits with
+$a_1\gtrsim 8\times10^{-5}$~LU (and small $a_2$) are chaotic or escape (frequency drift
+$10^{-3}$ to $10^{-1}$), and regular orbits (drift $\sim10^{-7}$) occupy only a thin region,
+$a_1\lesssim5\times10^{-6}$~LU, $a_2\in[2,8]\times10^{-5}$~LU; the first torus we tried,
+$a=(10^{-5},10^{-5})$~LU, sits at the edge of the resonance zone. We therefore moved to NRHO Id~97 (period $2.21528$~TU $=0.48493$~days, stability
+index $1.0000000000197$ in our table), whose linear rotation numbers
+$\rho^{\mathrm{lin}} = (0.3539576, 0.1943036)$ give $\rho_1-2\rho_2 = -0.0347$, ten times
+farther from the $1{:}2$ resonance. Its fixed point on $\Sigma$ is
+$z^* = (-1.000283097, -0.001895716, -0.000925503, -1.007691126)$ at energy
+$h = -1.50001746408344$ (Jacobi constant $3.00003492816688$); it lies about $456$~km from the center
+of Enceladus. \todo{Describe the scan of elliptic NRHO members by distance to low-order resonances
+that led to Id~97 (not recorded in the repository), and add a frequency-map figure.}
+\todo{Perilune and impact (measured 2026-10-01, Julia, Vern9, tolerance 1e-13): the perilune of NRHO Id~97 is
+$256.3$~km from the center of Enceladus, i.e.\ only $4.2$~km above the $252.1$~km mean radius. Minimum QPO altitudes over
+30 revolutions: $+3.4$~km (torus radius $1.5$~km), $+1.7$ ($4.8$), $+1.1$ ($6.1$), $+0.8$ ($6.9$), $-0.2$~km ($9.4$), so tori
+larger than about $9$~km impact Enceladus. Along the elliptic part of the NRHO data set the perilune altitude decreases with
+Id (Id 23: $25.8$, 53: $17.1$, 73: $11.3$, 85: $7.8$, 97: $4.2$~km; Id $\ge 113$ below the surface). Decide whether to
+feature Id~53 (resonance distance $0.017$) as the mission-relevant member.}
+
+\subsection{Newton convergence on the CR3BP}
+The start torus is orbit-fitted (\cref{sec:guess}) with amplitudes $(4\times10^{-5},4\times10^{-5})$~LU,
+on a $32\times32$ grid, with rotation numbers $\omega_s = (0.35372425999973, 0.19383759358522)$.
+\Cref{tab:newton} shows its Newton history and those of the next two continuation steps. The
+first step from the orbit fit reduces the error by more than two orders of magnitude, to
+$5.37\times10^{-13}$~LU; continuation steps from the secant predictor converge in two steps. The
+residual of the linearized equation after the first step is $1.5\times10^{-12}$, about $1\%$ of the
+error, and the frame check is $1.6\times10^{-8}$. The averaged torsion in local coordinates is
+symmetric to the printed digits,
+$\avg{T} = \left(\begin{smallmatrix}-1.337\times10^{-5} & -1.118\times10^{-4}\\
+-1.118\times10^{-4} & 3.862\times10^{-5}\end{smallmatrix}\right)$, with
+$\det\avg{T} = -1.30\times10^{-8}$, comparable to the square of its largest entry, so the twist
+condition is comfortably satisfied. The nearest resonance $k\cdot\omega\in\Z$ with $|k|\le 12$ at the
+start torus is $k=(-1,7)$, with $|k\cdot\omega - 1| \approx 3\times10^{-3}$.
+
+\begin{table}[t]
+\centering
+\caption{Newton histories on the CR3BP section map around NRHO Id~97, $32\times32$ grid, fixed
+$\omega$: sup-norm invariance error \eqref{eq:err} in LU. The iteration stops when the error is
+below the strict tolerance $10^{-12}$~LU. Source: \nolinkurl{results/families/nrho_id97/inward/run.log}.}
+\label{tab:newton}
+\begin{tabular}{lccc}
+\toprule
+torus & iteration 1 & iteration 2 & iteration 3 \\
+\midrule
+start ($\varepsilon=0$, orbit fit)    & $1.119\times10^{-10}$ & $5.370\times10^{-13}$ & \\
+$\varepsilon=-0.020$ (predictor)      & $2.450\times10^{-9}$  & $3.345\times10^{-10}$ & $5.561\times10^{-13}$ \\
+$\varepsilon=-0.047$ (predictor)      & $3.233\times10^{-9}$  & $6.024\times10^{-10}$ & $6.047\times10^{-13}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{A family of tori around NRHO Id~97}
+We continue along $\omega(\varepsilon) = \omega_s + \varepsilon\Delta\omega$ with
+$\Delta\omega = \omega_s - \rho^{\mathrm{lin}} = (-2.3333\times10^{-4},-4.6605\times10^{-4})$, the
+amplitude-frequency detuning of the start torus. Then $\varepsilon=-1$ is the NRHO itself
+(``inward''), and $\varepsilon>0$ gives larger tori (``outward''). The family was computed in four
+consecutive runs:
 \begin{itemize}
-    \item Initial invariance error: $\norm{E}_0 = 2.593$
-    \item Correction norm: $\norm{\xi} = 2.834 \times 10^5$
-    \item Inverse twist norm: $\norm{T^{-1}} = 2.280 \times 10^{-11}$
-          (well-conditioned)
+\item inward, $32\times32$: 43 tori from $\varepsilon=0$ to $-0.896$, torus scale $4.9\times10^{-5}$
+  to $1.6\times10^{-5}$~LU, 9 step halvings, under 10 minutes;
+\item inward toward the NRHO, $32\times32$: 71 further tori, down to cumulative
+  $\varepsilon=-0.980$, i.e.\ $2\%$ of the original detuning (radius $0.67$~km). The run stopped
+  when the step fell below its minimum, with errors approaching $10^{-11}$; it predates the
+  automatic grid refinement;
+\item outward, $32\times32$: 16 tori up to $\varepsilon = 0.570$, where Newton stalls at the
+  $32\times32$ truncation error (about $10^{-11}$);
+\item outward with refinement: restarted from the stalled torus, Newton stalls at
+  $9.9\times10^{-12}$, refines to $64\times64$ and converges to $4.3\times10^{-13}$; then 14 tori
+  up to cumulative $\varepsilon=2.60$ (radius $9.4$~km) with errors $3.9\times10^{-13}$ to
+  $6.6\times10^{-13}$~LU. The run ended at its prescribed limit on $\varepsilon$, not by failure.
+\end{itemize}
+The runs produced 144 converged tori, of which 141 are distinct (three tori appear in two
+consecutive runs: the start torus and the two tori at which runs were joined). They cover
+$\rho_2\in[0.19263, 0.19429]$ (\cref{fig:freq}) and radii of $0.67$ to $9.4$~km in $(q_1,q_2)$
+(\cref{fig:size,fig:section}). The sup error of invariance has median $3.8\times10^{-13}$~LU on the
+inward branch and $6.0\times10^{-13}$~LU on the outward branch, and maximum $1.0\times10^{-11}$~LU
+(\cref{fig:error}); $4\times10^{-13}$~LU is about $0.1$~mm. Near the NRHO the radius grows like
+$\sqrt{\rho^{\mathrm{lin}}_2-\rho_2}$, as expected for a detuning that is linear in the action.
+The largest errors occur where a branch approached the limit of its grid, before refinement.
+
+\begin{figure}[t]
+\centering
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{id97_frequencies.png}
+\caption{The family of Lagrangian tori around NRHO Id~97 in rotation-number space. Each marker is
+a converged torus; the diamond is the pair of linear rotation numbers of the NRHO.}
+\label{fig:freq}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\includegraphics[width=\textwidth]{id97_size.png}
+\caption{Torus radius in $(q_1,q_2)$ on the section (maximum distance from the center of the
+torus, km) along the family.}
+\label{fig:size}
+\end{minipage}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{id97_section.png}
+\caption{The smallest, a middle and the largest torus of the family on the section $q_3=0$,
+projected to $(q_1,q_2)$, on a common scale centered at the smallest torus. Each dot is a grid
+point of $K$.}
+\label{fig:section}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.6\textwidth]{id97_error.png}
+\caption{Sup-norm error of invariance \eqref{eq:err} of each accepted torus, in LU
+($10^{-12}$~LU $\approx 0.24$~mm).}
+\label{fig:error}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+% \includegraphics[width=0.8\textwidth]{qpo3d.png}
+\fbox{\parbox{0.8\textwidth}{\centering\vspace{2em}\todo{3D figure of quasi-periodic orbits in
+configuration space (being produced in \nolinkurl{figures/qpo3d/} by \nolinkurl{src/julia/qpo_visualization.jl})}\vspace{2em}}}
+\caption{\todo{Caption for the 3D QPO figure.}}
+\label{fig:qpo3d}
+\end{figure}
+
+\todo{Describe \cref{fig:qpo3d} (Fig.~TODO): the quasi-periodic orbits in configuration space,
+obtained by integrating the flow from points of the tori.}
+
+\subsection{Cost}
+Each Newton step evaluates the section map and its differential at every grid point, i.e.\ $N$
+integrations of the variational equations over about one NRHO period. Evaluating the map and
+Jacobian on a $32\times32$ grid takes about $2.5$~s, and this dominates the cost of a step; the
+cohomological equations and frame construction are FFT-based and comparatively cheap. The first
+inward run (43 tori, 171 evaluations of the invariance error including rejected steps) took under
+10 minutes. \todo{Machine, compiler flags, single/multi-threaded; timing per step on $64\times64$.}
+For comparison, the dense collocation Newton step costs $O((4N)^3)$ operations and storage
+$O((4N)^2)$.
+
+%% ============================================================================
+\section{Discussion}\label{sec:discussion}
+
+\subsection{Convergence where the hypotheses hold}
+Once the numerical issues of \cref{sec:lessons} were addressed, the method behaved as the theory
+says. On the twist map the error squares at each step. On the CR3BP, an orbit-fitted torus with
+error $10^{-10}$~LU is corrected to the map-noise floor in one step, and along the family the
+secant predictor plus two or three quasi-Newton steps suffice, each step costing $N$ map
+evaluations and $O(N\log N)$ operations. The torsion is symmetric and non-degenerate, the frame
+check is small, and the linearized residual is a small fraction of the error, all of which are
+a-posteriori indicators of the hypotheses of the KAM theorem
+\cite{figueras2017rigorous}. These indicators were also how the problems were found: a
+linearized residual comparable to the error, a non-symmetric $\avg{T}$, or a large frame check
+each pointed at a specific defect in the implementation. We have not attempted a computer-assisted
+proof; the a-posteriori theorems \cite{figueras2017rigorous,haro2016book} would require rigorous
+enclosures of the Poincar\'e map, for instance with $C^r$-Lohner methods
+\cite{wilczak2007lohner}.
+
+\subsection{Lessons: numerical hygiene for small tori far from the origin}\label{sec:lessons}
+The Barcelona KAM code was designed for maps on $\T^d\times\R^d$ such as the standard and
+Froeschl\'e maps, where tori are homotopic to the zero section and of order one. In that setting
+its choices are natural. Several of them become problems for Cartesian tori of radius
+$10^{-5}$~LU at $|z|\approx 1$; we list them because they are likely to affect other applications
+in astrodynamics.
+\begin{itemize}
+\item \emph{Angle lift.} For tori on $\T^d\times\R^d$ only $K(\theta)-(\theta,0)$ is periodic. For
+  Cartesian tori no lift applies; leaving it in produced an $O(1)$ spurious error.
+\item \emph{Frame choice.} A constant transversal field cannot be used around an elliptic point
+  (\cref{sec:verification}); the metric frame \eqref{eq:frame} can. In the original coordinates the
+  metric induced from $\R^6$ on the section is ill-conditioned ($|\nabla p_3|\sim 50$--$100$), and
+  the tori are so eccentric that $L^\top L$ is nearly singular in places; the resulting $B$ and $N$
+  are poorly resolved on the grid. Torus-adapted symplectic coordinates with $G=I$ remove both
+  problems. An earlier, isotropic rescaling made the twist look weak, which was an artifact of the
+  coordinates: the torsion is intrinsic once the action is measured by $\Omega$.
+\item \emph{Absolute thresholds.} With tori of radius $10^{-5}$, the right-hand side of the
+  normal-row cohomological equation was of order $10^{-15}$, and an absolute small-coefficient
+  threshold of $10^{-17}$ dropped about $85\%$ of it, so each step left a residual of the size of
+  the error. Rescaling to unit circles and making the threshold relative fixed this.
+\item \emph{Nyquist modes.} One-sided Nyquist coefficients made $DK$, $N$ and $T$ complex in real
+  space, and routines that use only the real part silently dropped the imaginary parts.
+\item \emph{Error norm.} The Fourier $\ell^1$ norm of $E$ sums a broadband floor of about
+  $10^{-14}$ per coefficient. It reported about $10^{-11}$ on $32\times32$ and $1.6\times10^{-10}$
+  on $128\times128$ for a torus whose sup error was $5.4\times10^{-13}$~LU. This made refined grids
+  look worse and stalled continuation; with the sup norm, refinement behaves as expected.
+\item \emph{Stale frame.} With local coordinates built once from the start torus, continuation
+  stalled after $|\Delta\varepsilon|\approx0.1$; rebuilding them from each accepted torus removed
+  the stall (a restart from the stuck torus converged at once, to $5.5\times10^{-13}$).
+\end{itemize}
+In addition, the state transition matrix was read transposed and the gradient of $p_3$ missed the
+chain-rule factor in the problem-specific interface code; the Jacobian check and the fixed-point
+Newton test catch both kinds of error. None of these issues is a flaw of the method. They are the
+practical cost of moving a validated code to a problem with very different scales, and the
+diagnostics above are a cheap way to detect them.
+
+\subsection{Limitations}
+\begin{itemize}
+\item \emph{Map-noise floor.} Converged tori have sup errors of about $4\times10^{-13}$~LU. The
+  spectrum of $E$ shows a broadband floor of about $10^{-14}$ per coefficient, plus peaks at the
+  filter cutoff and at the near-resonant mode $k=(-1,7)$. Tightening the section tolerance from
+  $10^{-12}$ to $10^{-14}$ was necessary; an earlier, larger floor did not move with the RK78
+  tolerance or the section tolerance beyond that. The exact source of the remaining floor in the
+  map evaluation is not yet characterized. \todo{Characterize the floor (e.g., by comparing with an
+  extended-precision or Taylor integrator).}
+\item \emph{Resonances.} The line in $\omega$ crosses resonances densely; numerically only
+  low-order ones with small divisors on the grid matter. Near the $1{:}2$ resonance (NRHO Id~72)
+  the method is not applicable to the resonant tori, which are not Lagrangian KAM tori with the
+  prescribed frequencies. The quasi-Newton step also amplifies noise through the small divisors,
+  which is why stall detection is needed. We have not checked Diophantine conditions.
+\item \emph{Poincar\'e map vs.\ flow map.} We use a Poincar\'e map at fixed energy, which yields a
+  symplectic map of the right dimension. Haro and Mondelo note that the time-$T$ flow-map approach
+  gives exact symplectic maps in both isochronous and isoenergetic settings and is cheaper to code
+  and evaluate, and that Poincar\'e maps complicate multiple shooting
+  \cite[Remark~2.4.5, pp.~8--9]{haromondelo2021flow}. Multiple shooting would also shorten the
+  integration intervals, which may help near the close passage of the NRHO over Enceladus. A flow-map version of this framework
+  \cite{haromondelo2021flow,fernandezmora2024siads,fernandezmora2026convergence} is a natural next
+  step.
+\item \emph{Extent of the family.} The inward branch stopped at $2\%$ of the original detuning on
+  $32\times32$, before automatic refinement existed, and the outward branch stopped at its
+  prescribed limit $\varepsilon = 2.60$ (radius $9.4$~km). \todo{Report the end point of the
+  extended outward branch (currently running) and whether it is limited by resonances, the grid,
+  or the loss of the elliptic character of the tori.}
+\item \emph{Stability information.} We have not yet computed the linear stability of the tori
+  (the tangent and normal bundles beyond the frame), nor their mission-relevant properties
+  (minimum altitude, eclipse, station-keeping cost). \todo{Decide whether to include any of
+  these for the conference version.}
 \end{itemize}
 
-The well-conditioned twist matrix (inverse norm $\sim 10^{-11}$) indicates that
-the torus is in the normally hyperbolic regime, where the parameterization method
-is expected to converge quadratically. The large correction norm relative to the
-error magnitude suggests the initial guess (generated from linear approximation
-based on the NRHO monodromy matrix) requires significant adjustment.
+%% ============================================================================
+\section{Conclusions}\label{sec:conclusions}
+We built a parameterization-method solver for Lagrangian invariant tori of the Saturn--Enceladus
+CR3BP around nearly stable NRHOs, based on the KAM code of Haro and Luque and the RTBP library of
+Haro and Mondelo, and verified it on an integrable twist map with exact solutions and against
+finite differences and an independent dense Newton solver. With torus-adapted symplectic
+coordinates, scale-free thresholds, a sup-norm error, low-pass filtering, stall detection and grid
+refinement, the quasi-Newton step converges from orbit-fitted guesses to the noise floor of the
+Poincar\'e map in one to three steps, at $O(N\log N)$ cost plus $N$ map evaluations per step.
+Continuation in the rotation vector produced a family of 141 tori around NRHO Id~97, with radii
+from $0.67$ to $9.4$~km on the section and median errors of a few $10^{-13}$~LU (about $0.1$~mm).
+Next steps are the extension of the family, a flow-map formulation with multiple shooting, the
+stability of the tori, and their use in mission design for an Enceladus orbiter.
 
-The correction step completed successfully without numerical instabilities,
-validating the implementation of the cohomological equation solver and symplectic
-frame construction. The computation required adaptive grid refinement from
-$32 \times 32$ to $128 \times 128$ to ensure adequate Fourier resolution.
-
-\subsection{Torus Geometry and Dynamics}
-
-TODO: Add analysis of the computed torus:
-\begin{itemize}
-    \item Rotation frequencies $\boldsymbol{\omega}$
-    \item Diophantine properties (rational independence)
-    \item Visualization of the torus in configuration space
-    \item Cross-sections showing the torus structure
-    \item Stability analysis (Lyapunov exponents)
-\end{itemize}
-
-\subsection{Comparison with Poincaré Map Iteration}
-
-TODO: Compare the computed torus with direct integration of quasi-periodic orbits.
-
-\section{Discussion and Conclusions}
-\label{sec:conclusion}
-
-\subsection{Summary of Results}
-
-We have successfully developed and applied a computational framework for computing
-Lagrangian tori around Near-Rectilinear Halo Orbits in the Saturn-Enceladus
-system using the parameterization method. The key findings include:
-
-\begin{enumerate}
-    \item The parameterization method is applicable and effective for computing
-          invariant tori around NRHOs in the Saturn-Enceladus system, demonstrating
-          feasibility for realistic mission design applications.
-
-    \item Our hybrid C++/Julia implementation achieves efficient computation through
-          adaptive grid refinement (automatically selecting resolution based on
-          Fourier tail criteria) and high-performance numerical integration of
-          the CR3BP equations.
-
-    \item The computed tori exhibit the expected quasi-periodic structure and
-          provide a two-parameter family of trajectories in the vicinity of the
-          NRHO, offering mission designers a continuum of orbit options.
-
-    \item Numerical challenges identified during implementation include the
-          importance of proper Fourier truncation management, the need for
-          well-conditioned twist matrices, and careful handling of the small
-          divisor problem in cohomological equations.
-\end{enumerate}
-
-\subsection{Implications for Enceladus Mission Design}
-
-The computed invariant tori have several specific applications for Enceladus
-mission design:
-
-\begin{itemize}
-    \item \textbf{Science orbit optimization}: The two-parameter family of QPOs
-          on each torus allows optimization for specific science objectives.
-          For example, trajectories can be selected to:
-          \begin{itemize}
-              \item Maximize time in Enceladus's south polar plume
-              \item Optimize viewing geometry for surface mapping
-              \item Maintain desired lighting conditions for imaging
-              \item Achieve specific communication windows with Earth
-          \end{itemize}
-
-    \item \textbf{Low-cost station-keeping}: Rather than using continuous thrust
-          to maintain a specific NRHO, small impulsive maneuvers can transition
-          between nearby QPOs on the same torus, leveraging natural dynamics to
-          reduce propellant consumption over multi-year missions.
-
-    \item \textbf{Robust mission design}: Knowledge of the torus structure provides
-          confidence in long-term orbital stability. If navigation errors or
-          maneuver execution errors perturb the spacecraft off the nominal
-          trajectory, the torus characterizes whether the perturbed state remains
-          in a quasi-periodic family or escapes the region.
-
-    \item \textbf{Multi-orbit transfers}: Connections between tori around different
-          Enceladus NRHOs (at different energy levels) may enable low-cost transfers
-          between science orbits with different geometric or energetic properties.
-
-    \item \textbf{Tour design}: For missions requiring multiple Enceladus flybys
-          or transitions between NRHOs, understanding the torus structure helps
-          identify natural pathways and minimize $\Delta V$ requirements.
-\end{itemize}
-
-These applications are particularly relevant for proposed missions such as the
-Enceladus Orbilander concept or future astrobiology-focused missions requiring
-extended operation in the Saturn-Enceladus system.
-
-\subsection{Numerical Challenges and Lessons Learned}
-
-Several numerical challenges were encountered and resolved during this work:
-
-\begin{enumerate}
-    \item \textbf{Fourier truncation management}: The \texttt{clean()} operation
-          that removes small Fourier modes is necessary to prevent aliasing but
-          must be applied carefully to avoid accumulating truncation errors.
-
-    \item \textbf{Small divisor problem}: The cohomological equations involve
-          division by $\mathbf{k} \cdot \boldsymbol{\omega}$, which can be small.
-          The Diophantine condition on $\boldsymbol{\omega}$ ensures these divisors
-          are bounded away from zero.
-
-    \item \textbf{Twist matrix conditioning}: The average twist matrix
-          $\bar{T}$ must remain well-conditioned. The computed inverse norm
-          $\norm{T^{-1}} = 2.280 \times 10^{-11}$ indicates excellent conditioning
-          for our Enceladus NRHO test case, confirming the torus is in the
-          normally hyperbolic regime.
-
-    \item \textbf{Computational cost}: For a $128 \times 128$ grid, each
-          KAM correction iteration requires 16,384 Poincaré map evaluations.
-          In dynamically complex regions of the Saturn-Enceladus system, individual
-          trajectory integrations can require $\sim 10^5$ integration steps,
-          making each correction iteration computationally expensive (on the
-          order of hours on a single CPU core).
-
-    \item \textbf{Parameter continuation strategy}: Implementing proper termination
-          criteria for parameter continuation is essential. Without bounds on
-          continuation parameters or maximum iteration counts, continuation loops
-          can run indefinitely, particularly when exploring large parameter spaces.
-\end{enumerate}
-
-\subsection{Future Work}
-
-Several directions for future research are apparent:
-
-\begin{enumerate}
-    \item \textbf{3D tori}: Extension to three-frequency tori, which fill
-          3-dimensional manifolds in phase space.
-
-    \item \textbf{Torus breakdown}: Investigation of parameter ranges where
-          tori cease to exist due to resonances (KAM breakdown).
-
-    \item \textbf{Whisker computation}: Computation of stable/unstable manifolds
-          (whiskers) attached to partially hyperbolic tori.
-
-    \item \textbf{A posteriori validation}: Rigorous computer-assisted proofs
-          that the computed numerical approximations are close to true invariant
-          tori (following Haro's validated numerics approach).
-
-    \item \textbf{Multi-body extensions}: Application to more complex multi-body
-          systems (e.g., Sun-Earth-Moon).
-
-    \item \textbf{Mission applications}: Integration with mission design tools
-          for practical trajectory optimization.
-\end{enumerate}
+\paragraph{Code and data availability.} \todo{Repository URL (github.com/jared711/nrho-lagrangian-tori?),
+license (the RTBP library is LGPL v3 or later), and the commit used for the results; the tori,
+run logs and commands are in \nolinkurl{results/families/nrho_id97/}.}
 
 \section*{Acknowledgments}
+The author thanks \`Alex Haro (Universitat de Barcelona) and Josep-Maria Mondelo (Universitat
+Aut\`onoma de Barcelona) for six months of collaboration on this project and for their guidance.
+The computations use the parameterization-method KAM code of \`Alex Haro and Alejandro Luque and
+the CR3BP, variational-equation and Poincar\'e-section library of \`Alex Haro and Josep-Maria
+Mondelo; the solver, the grid utilities and the integrator are theirs, and this work would not have
+been possible without them. \todo{Funding, if any.}
+\todo{Owner to review this sentence:} Part of the code changes made after 2024 (debugging, the
+practical ingredients of \cref{sec:practical}, the verification modes and the analysis scripts)
+were developed with the assistance of an AI coding assistant and reviewed by the author; the
+origin of every part of the code is recorded in \nolinkurl{docs/PROVENANCE.md} of the repository.
 
-The author thanks Àlex Haro and Josep-Maria Mondelo for their foundational work
-on the parameterization method, which forms the basis of this implementation.
-
-\bibliographystyle{siamplain}
+\bibliographystyle{siam}
 \bibliography{references}
 
 \end{document}
