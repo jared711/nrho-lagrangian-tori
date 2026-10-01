@@ -135,11 +135,19 @@ myreal epsilon; // Continuation parameter
 int map_failures = 0; // Number of failed Poincare map evaluations since last check
 int free_frequency = 0; // 1: Newton corrects omega and fixes the average normal correction (--free-omega)
 
-/* The torus is solved in local coordinates zeta = (z - zcen) / zscale, where z = (q1,q2,p1,p2)
-   are the physical section coordinates. map_CR3BP and gform_CR3BP take zeta. */
+/* The torus is solved in local coordinates zeta, z = zcen + Mloc zeta, where z = (q1,q2,p1,p2)
+   are the physical section coordinates and the columns of Mloc are the first-harmonic axes of
+   the input torus, so that the torus is close to a product of round circles in zeta.
+   map_CR3BP and gform_CR3BP take zeta; sform_CR3BP returns the constant form
+   Omega_loc = Mloc^T Omega Mloc. The defaults (identity) give physical coordinates.
+   zscale (the size of the input torus) is only used to convert tolerances and printed errors. */
 myreal zcen[DMAP] = {0.0, 0.0, 0.0, 0.0};
 myreal zscale = 1.0;
+myreal Mloc[DMAP][DMAP] = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
+myreal Minv[DMAP][DMAP] = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
+myreal Omega_loc[DMAP][DMAP] = {{0, 0, -1, 0}, {0, 0, 0, -1}, {1, 0, 0, 0}, {0, 1, 0, 0}};
 void to_physical(complex *zeta, complex *z);
+int invert4(myreal A[DMAP][DMAP], myreal Ainv[DMAP][DMAP]);
 
 fstream file_torus, file_input;
 
@@ -413,18 +421,96 @@ int main(int argc, char *argv[])
     // }
     // return 0;
 
-    /* Change to local coordinates zeta = (z - zcen) / zscale centered at the average of the
-       torus and scaled by its size, so that DK, N and the torsion are O(1). The scaling is
-       conformally symplectic with a constant factor, so the same Omega is used. */
+    /* Change to local coordinates z = zcen + Mloc zeta, centered at the average of the torus,
+       with Mloc built from its first harmonics. In zeta the torus is close to a product of round
+       circles, so L^T L is nearly constant and the normal frame N is well resolved on the grid.
+       The change is linear, so the form stays constant: Omega_loc = Mloc^T Omega Mloc. */
     for (int i = 0; i < DMAP; i++)
         zcen[i] = paramF.coef[i][0].elem[0].real;
     zscale = 0.0;
     for (int i = 0; i < DMAP; i++)
         for (int l = 0; l < nelem; l++)
             zscale = fmax(zscale, fabs(paramR.coef[i][0].elem[l].real - zcen[i]));
-    for (int i = 0; i < DMAP; i++)
-        for (int l = 0; l < nelem; l++)
-            paramR.coef[i][0].elem[l] = (paramR.coef[i][0].elem[l].real - zcen[i]) / zscale;
+    {
+        /* First harmonics: K(theta) ~ zcen + sum_j a_j cos(2 pi theta_j) + b_j sin(2 pi theta_j),
+           with a_j = 2 Re K_{e_j}, b_j = -2 Im K_{e_j}. Columns of Mloc: a_1 a_2 b_1 b_2. */
+        int pos1 = nn[1]; // index (1,0): position 1 * nn[1] + 0
+        int pos2 = 1;     // index (0,1)
+        for (int i = 0; i < DMAP; i++)
+        {
+            Mloc[i][0] = 2.0 * paramF.coef[i][0].elem[pos1].real;
+            Mloc[i][1] = 2.0 * paramF.coef[i][0].elem[pos2].real;
+            Mloc[i][2] = -2.0 * paramF.coef[i][0].elem[pos1].imag;
+            Mloc[i][3] = -2.0 * paramF.coef[i][0].elem[pos2].imag;
+        }
+        /* Symplectic normalization of each pair (a_j, b_j): scale so that a_j^T Omega b_j = -1, the
+           value of e_q^T Omega e_p for the standard form. Omega_loc is then close to the standard
+           form and zeta is measured in units of sqrt(action). */
+        {
+            double Om0[DMAP][DMAP] = {{0, 0, -1, 0}, {0, 0, 0, -1}, {1, 0, 0, 0}, {0, 1, 0, 0}};
+            for (int j = 0; j < DTOR; j++)
+            {
+                double w = 0.0;
+                for (int k = 0; k < DMAP; k++)
+                    for (int m = 0; m < DMAP; m++)
+                        w += Mloc[k][j] * Om0[k][m] * Mloc[m][j + DTOR];
+                if (w == 0.0)
+                    continue;
+                double sa = 1.0 / sqrt(fabs(w)), sb = (w > 0) ? -sa : sa;
+                for (int k = 0; k < DMAP; k++)
+                {
+                    Mloc[k][j] *= sa;
+                    Mloc[k][j + DTOR] *= sb;
+                }
+            }
+        }
+        if (!invert4(Mloc, Minv))
+        {
+            cout << "# First-harmonic matrix is singular; using isotropic scaling" << endl;
+            for (int i = 0; i < DMAP; i++)
+                for (int j = 0; j < DMAP; j++)
+                {
+                    Mloc[i][j] = (i == j) ? zscale : 0.0;
+                    Minv[i][j] = (i == j) ? 1.0 / zscale : 0.0;
+                }
+        }
+        double Om[DMAP][DMAP] = {{0, 0, -1, 0}, {0, 0, 0, -1}, {1, 0, 0, 0}, {0, 1, 0, 0}};
+        for (int i = 0; i < DMAP; i++)
+            for (int j = 0; j < DMAP; j++)
+            {
+                Omega_loc[i][j] = 0.0;
+                for (int k = 0; k < DMAP; k++)
+                    for (int m = 0; m < DMAP; m++)
+                        Omega_loc[i][j] += Mloc[k][i] * Om[k][m] * Mloc[m][j];
+            }
+        /* zscale converts local lengths to physical ones: |dz| <~ zscale |dzeta| */
+        zscale = 0.0;
+        for (int j = 0; j < DMAP; j++)
+        {
+            double c = 0.0;
+            for (int i = 0; i < DMAP; i++)
+                c += Mloc[i][j] * Mloc[i][j];
+            zscale = fmax(zscale, sqrt(c));
+        }
+        cout << "# Omega_loc:";
+        for (int i = 0; i < DMAP; i++)
+            for (int j = 0; j < DMAP; j++)
+                cout << " " << Omega_loc[i][j];
+        cout << endl;
+    }
+    for (int l = 0; l < nelem; l++)
+    {
+        double dz[DMAP];
+        for (int i = 0; i < DMAP; i++)
+            dz[i] = paramR.coef[i][0].elem[l].real - zcen[i];
+        for (int i = 0; i < DMAP; i++)
+        {
+            double v = 0.0;
+            for (int j = 0; j < DMAP; j++)
+                v += Minv[i][j] * dz[j];
+            paramR.coef[i][0].elem[l] = v;
+        }
+    }
     paramF = fft_F(paramR);
     toltail /= zscale; // tolerances in the input file are in physical units
     tolinva /= zscale;
@@ -596,9 +682,13 @@ int main(int argc, char *argv[])
                 indices(l, nn, index, DTOR);
                 for (int j = 0; j < DTOR; j++)
                     file_torus << index[j] << " ";
+                complex zeta[DMAP], zphys[DMAP];
+                for (int j = 0; j < DMAP; j++)
+                    zeta[j] = paramR.coef[j][0].elem[l];
+                to_physical(zeta, zphys);
                 for (int j = 0; j < DMAP - 1; j++)
-                    file_torus << zcen[j] + zscale * paramR.coef[j][0].elem[l].real << " ";
-                file_torus << zcen[DMAP - 1] + zscale * paramR.coef[DMAP - 1][0].elem[l].real << endl;
+                    file_torus << zphys[j].real << " ";
+                file_torus << zphys[DMAP - 1].real << endl;
             }
             file_torus.close();
             /**** END   We save the computed invariant torus in a separated file ****/
@@ -1254,7 +1344,53 @@ void nu(complex *z, double *x, double (*Dnu)[4]){
 void to_physical(complex *zeta, complex *z)
 {
     for (int i = 0; i < 4; i++)
-        z[i] = complex(zcen[i] + zscale * zeta[i].real, 0.0);
+    {
+        double v = zcen[i];
+        for (int j = 0; j < 4; j++)
+            v += Mloc[i][j] * zeta[j].real;
+        z[i] = complex(v, 0.0);
+    }
+}
+
+/* Inverse of a 4x4 matrix by Gauss-Jordan elimination with partial pivoting. Returns 0 if singular. */
+int invert4(myreal A[DMAP][DMAP], myreal Ainv[DMAP][DMAP])
+{
+    double a[DMAP][2 * DMAP];
+    for (int i = 0; i < DMAP; i++)
+        for (int j = 0; j < DMAP; j++)
+        {
+            a[i][j] = A[i][j];
+            a[i][j + DMAP] = (i == j) ? 1.0 : 0.0;
+        }
+    for (int c = 0; c < DMAP; c++)
+    {
+        int p = c;
+        for (int r = c + 1; r < DMAP; r++)
+            if (fabs(a[r][c]) > fabs(a[p][c]))
+                p = r;
+        if (fabs(a[p][c]) < 1e-300)
+            return 0;
+        for (int j = 0; j < 2 * DMAP; j++)
+        {
+            double t = a[c][j];
+            a[c][j] = a[p][j];
+            a[p][j] = t;
+        }
+        double d = a[c][c];
+        for (int j = 0; j < 2 * DMAP; j++)
+            a[c][j] /= d;
+        for (int r = 0; r < DMAP; r++)
+            if (r != c)
+            {
+                double m = a[r][c];
+                for (int j = 0; j < 2 * DMAP; j++)
+                    a[r][j] -= m * a[c][j];
+            }
+    }
+    for (int i = 0; i < DMAP; i++)
+        for (int j = 0; j < DMAP; j++)
+            Ainv[i][j] = a[i][j + DMAP];
+    return 1;
 }
 
 void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
@@ -1339,8 +1475,17 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
     fz[3].real = x[4]; // py
     fz[3].imag = val0;
     // p3, or x[5], is not part of my state
-    for (int i = 0; i < 4; i++) // back to local coordinates; Dfz is unchanged by the scaling
-        fz[i].real = (fz[i].real - zcen[i]) / zscale;
+    { // back to local coordinates: fz = Minv (F - zcen)
+        double dz[4];
+        for (int i = 0; i < 4; i++)
+            dz[i] = fz[i].real - zcen[i];
+        for (int i = 0; i < 4; i++)
+        {
+            fz[i].real = 0.0;
+            for (int j = 0; j < 4; j++)
+                fz[i].real += Minv[i][j] * dz[j];
+        }
+    }
     /*We fill in DP with the STM, then we'll change it to be the actual differential of the Pmap by adding f_tau*Dtau */
     double DP[6][6];
     for (int i = 0; i < 6; i++)
@@ -1414,6 +1559,24 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
             }
         }
     }
+    { // Jacobian in local coordinates: Minv DF Mloc
+        double DM[4][4];
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+            {
+                DM[i][j] = 0.0;
+                for (int k = 0; k < 4; k++)
+                    DM[i][j] += Dfz[i][k].real * Mloc[k][j];
+            }
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+            {
+                double v = 0.0;
+                for (int k = 0; k < 4; k++)
+                    v += Minv[i][k] * DM[k][j];
+                Dfz[i][j] = complex(v, 0.0);
+            }
+    }
 
     // Todo: compute the derivative of the map with respect to the parameter
     for (int i = 0; i < 4; i++)
@@ -1425,26 +1588,12 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
 
 void sform_CR3BP(complex *z, complex **Omegaz)
 {
-    // fill omega matrix with 2x2 negative identity in the top right corner, and normal identity matrix in the bottom left corner
-    Omegaz[0][0] = val0;
-    Omegaz[0][1] = val0;
-    Omegaz[0][2] = -val1;
-    Omegaz[0][3] = val0;
-
-    Omegaz[1][0] = val0;
-    Omegaz[1][1] = val0;
-    Omegaz[1][2] = val0;
-    Omegaz[1][3] = -val1;
-
-    Omegaz[2][0] = val1;
-    Omegaz[2][1] = val0;
-    Omegaz[2][2] = val0;
-    Omegaz[2][3] = val0;
-
-    Omegaz[3][0] = val0;
-    Omegaz[3][1] = val1;
-    Omegaz[3][2] = val0;
-    Omegaz[3][3] = val0;
+    // Constant symplectic form in the torus coordinates: Omega_loc = Mloc^T Omega Mloc, where
+    // Omega has the 2x2 negative identity in the top right corner and the identity in the bottom
+    // left corner (Omega_loc = Omega in physical coordinates)
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            Omegaz[i][j] = Omega_loc[i][j];
 }
 
 void gform_CR3BP(complex *z, complex **Metricz)
