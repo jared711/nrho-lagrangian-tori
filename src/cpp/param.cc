@@ -865,6 +865,8 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     newetaR = etaLR - twistR * RetaNR;
 
     aver(twistR, twist0);
+    cout << "#     - Average torsion <T>: [" << twist0[0][0] << " " << twist0[0][1] << "; "
+         << twist0[1][0] << " " << twist0[1][1] << "], det " << twist0[0][0] * twist0[1][1] - twist0[0][1] * twist0[1][0] << endl;
     tolqr = tolinte;
     qrdcmp(twist0, DTOR, DTOR, tolqr);
     global_twist = val0;
