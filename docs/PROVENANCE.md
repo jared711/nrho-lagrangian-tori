@@ -51,6 +51,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 * AI-2026-10: section-crossing tolerance `tolJM` in `map_CR3BP()` 1e-12 → 1e-14.
 * AI-2026-10: stall detection in the Newton loop of `main()` (keep the best torus, stop when a step fails to halve the error, accept below `--tol-floor`).
 * AI-2026-10: low-pass filter in `kam_torus()` after each Newton step (upper half of the DFT set to zero, as in Haro & Mondelo 2021; `--no-filter` disables it).
+* AI-2026-10: continuation in rotation vector (`--domega`, `--eps-max`, `--max-steps`), secant predictor and Haro–Mondelo step control in `main()`; the input torus is converged first. Stall threshold 0.9.
 * `4b6c47a`: `--fdcheck` and `--orbit` modes in `main()`.
 * AI-2026-10: local coordinates ζ = (z − z_c)/s for the CR3BP torus (`to_physical()`, `zcen`, `zscale`); `map_CR3BP()` and `gform_CR3BP()` take ζ.
 * AI-2026-10: local coordinates generalized to z = z_c + M ζ, with M from the symplectically normalized first harmonics of the input torus, rescaled so the torus circles have radius ~1 (`Mloc`, `Minv`, `Omega_loc`, `invert4()`); `sform_CR3BP()` returns Ω_loc = MᵀΩM (suggested by the code-audit and literature agents).

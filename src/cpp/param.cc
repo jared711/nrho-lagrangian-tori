@@ -135,6 +135,9 @@ myreal epsilon; // Continuation parameter
 int map_failures = 0; // Number of failed Poincare map evaluations since last check
 int free_frequency = 0; // 1: Newton corrects omega and fixes the average normal correction (--free-omega)
 myreal tolfloor = 1e-10; // accept a stalled Newton iteration if its best error is below this (physical, --tol-floor)
+myreal domega_cont[DTOR] = {0.0, 0.0}; // continuation direction in omega per unit epsilon (--domega)
+myreal eps_max = 0.01;                  // continuation stops beyond this epsilon (--eps-max)
+int max_cont_steps = 10;                // maximum number of continuation steps (--max-steps)
 int lowpass_filter = 1;                 // zero the upper half of the DFT after each Newton step (--no-filter)
 
 /* The torus is solved in local coordinates zeta, z = zcen + Mloc zeta, where z = (q1,q2,p1,p2)
@@ -192,6 +195,15 @@ int main(int argc, char *argv[])
             free_frequency = 1;
         else if (strcmp(argv[i], "--tol-floor") == 0 && i + 1 < argc)
             tolfloor = atof(argv[++i]);
+        else if (strcmp(argv[i], "--domega") == 0 && i + 2 < argc)
+        {
+            domega_cont[0] = atof(argv[++i]);
+            domega_cont[1] = atof(argv[++i]);
+        }
+        else if (strcmp(argv[i], "--eps-max") == 0 && i + 1 < argc)
+            eps_max = atof(argv[++i]);
+        else if (strcmp(argv[i], "--max-steps") == 0 && i + 1 < argc)
+            max_cont_steps = atoi(argv[++i]);
         else if (strcmp(argv[i], "--no-filter") == 0)
             lowpass_filter = 0;
 
@@ -602,25 +614,42 @@ int main(int argc, char *argv[])
     /* END DEBUG BLOCK*/
 
     /**** START Continuation with respect to epsilon ****/
+    /* Continuation in the rotation vector at fixed energy (Haro & Mondelo 2021, arXiv:2101.07665,
+       Sec. 3.5, Alg. 3.5.4): omega(epsilon) = omega_start + (epsilon - epsilon_start) * domega, with
+       domega given by --domega (cycles per iterate per unit epsilon). Without --domega, epsilon does
+       not enter the problem (the map does not depend on it). Predictor: secant through the last two
+       converged tori. Step control as in Haro & Mondelo, Alg. 3.6.1, pp. 29-30: halve the step on
+       failure, and set deps <- deps * n_des / n_it after a success (factor clamped to [0.5, 2]). */
     int fail = 0;
     int cont_step = 0;
-    const int MAX_CONT_STEPS = 10;  // Maximum number of continuation steps
-    const double MAX_EPSILON = 0.01; // Maximum value of epsilon to continue
+    myreal omega_start[DTOR], epsilon_start = epsilon0, deps_start = deps, deps_last = 0.0;
+    for (int i = 0; i < DTOR; i++)
+        omega_start[i] = omega[i];
+    matrix paramRm1, paramFm1; // previous converged torus, for the secant predictor
+    int have_prev = 0;
+    const int N_DES = 4;
     do
     {
         paramR = paramR0;
         paramF = paramF0;
-        epsilon = epsilon0 + deps;
+        epsilon = (cont_step == 0) ? epsilon0 : epsilon0 + deps; // first converge the input torus
+        for (int i = 0; i < DTOR; i++)
+            omega[i] = omega_start[i] + (epsilon - epsilon_start) * domega_cont[i];
+        if (have_prev && deps_last > 0.0)
+        {
+            paramR = paramR0 + (paramR0 - paramRm1) * (deps / deps_last);
+            paramF = fft_F(paramR);
+        }
 
         // Check continuation termination criteria
-        if (epsilon > MAX_EPSILON) {
-            cout << "# Reached maximum epsilon = " << epsilon << " (limit: " << MAX_EPSILON << ")" << endl;
+        if ((deps > 0 && epsilon > eps_max) || (deps < 0 && epsilon < eps_max)) {
+            cout << "# Reached maximum epsilon = " << epsilon << " (limit: " << eps_max << ")" << endl;
             cout << "# Terminating continuation." << endl;
             fail = 1;
             break;
         }
-        if (cont_step >= MAX_CONT_STEPS) {
-            cout << "# Reached maximum continuation steps = " << cont_step << " (limit: " << MAX_CONT_STEPS << ")" << endl;
+        if (cont_step >= max_cont_steps) {
+            cout << "# Reached maximum continuation steps = " << cont_step << " (limit: " << max_cont_steps << ")" << endl;
             cout << "# Terminating continuation." << endl;
             fail = 1;
             break;
@@ -628,12 +657,12 @@ int main(int argc, char *argv[])
         cont_step++;
 
         /**** START Newton method to correct the invariant torus ****/
-        cout << "# Continuation step " << cont_step << " / " << MAX_CONT_STEPS << endl;
-        cout << "# We try to compute the torus for epsilon=" << epsilon << " (limit: " << MAX_EPSILON << ")" << endl;
+        cout << "# Continuation step " << cont_step << " / " << max_cont_steps << endl;
+        cout << "# We try to compute the torus for epsilon=" << epsilon << " (limit: " << eps_max << ")" << endl;
         iter = 0;
         /* Stall detection: the error of the map evaluation sets a floor below which Newton cannot go;
            once there, further steps only amplify that noise through the small divisors. We keep the
-           best torus seen and stop when a step fails to halve the error. The best torus is accepted
+           best torus seen and stop when a step fails to reduce the error by 10%. The best torus is accepted
            as converged if its error is below tolfloor (physical units, --tol-floor). */
         double best_error = DBL_MAX, prev_error = DBL_MAX;
         matrix bestR, bestF;
@@ -656,7 +685,7 @@ int main(int argc, char *argv[])
                     for (int i = 0; i < DTOR; i++)
                         best_omega[i] = entry_omega[i];
                 }
-                if (error > 0.5 * prev_error)
+                if (error > 0.9 * prev_error)
                 {
                     paramR = bestR;
                     paramF = bestF;
@@ -697,6 +726,7 @@ int main(int argc, char *argv[])
                         newnn[i] = 2 * nn[i];
                 }
                 realloc_torus(paramR, paramF, paramR0, paramF0, nelem, nn, newnn);
+                have_prev = 0; // the previous torus is on the old grid
             }
             iter++;
         } while (conv == 0 && iter < MNEW && tail0 == 0);
@@ -706,9 +736,20 @@ int main(int argc, char *argv[])
         {
             cout.precision(15);
             /* If we converge, we update the last computed torus and store the results */
+            if (paramR0.coef[0][0].nelem == paramR.coef[0][0].nelem)
+            {
+                paramRm1 = paramR0;
+                paramFm1 = paramF0;
+                have_prev = 1;
+            }
+            else
+                have_prev = 0;
+            deps_last = deps;
             paramR0 = paramR;
             paramF0 = paramF;
             epsilon0 = epsilon;
+            double factor = (double)N_DES / (double)(iter > 0 ? iter : 1);
+            deps *= fmin(2.0, fmax(0.5, factor));
 
             /**** START We print the information related to the successful continuation step ****/
             cout << epsilon << " ";
@@ -721,7 +762,7 @@ int main(int argc, char *argv[])
             /**** END   We print the information related to the successful continuation step ****/
 
             /**** START We save the computed invariant torus in a separated file ****/
-            sprintf(name, "output_torus%.4lf", epsilon);
+            sprintf(name, "output_torus%.6lf", epsilon);
             file_torus.open(name, ios::out);
             file_torus << scientific;
             file_torus.precision(15);
@@ -759,9 +800,10 @@ int main(int argc, char *argv[])
                 cout << "# We need more Fourier modes" << endl;
             else
             {
-                cout << "# Newton method does not converge" << endl;
-                deps = deps / val10;
-                if (deps < 1e-5)
+                cout << "# Newton method does not converge; halving the continuation step" << endl;
+                deps = deps / val2;
+                have_prev = (deps_last > 0.0) ? have_prev : 0;
+                if (fabs(deps) < 1e-3 * fabs(deps_start))
                     fail = 1;
             }
             cout << "###########################################" << endl;
