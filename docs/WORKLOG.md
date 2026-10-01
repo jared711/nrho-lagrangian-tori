@@ -57,3 +57,10 @@ Running log of the solver work, newest last. Commit hashes refer to this repo. S
 * `references.bib` rebuilt with 33 verified entries (`19a368f`); new paper draft, 14 pages, compiles (`742d785`), with author TODOs.
 * QPO visualizations (`figures/qpo3d/`).
 * **Impact boundary:** NRHO Id 97's perilune is only 4.2 km above Enceladus' mean surface, and tori larger than ~9 km dip below it. Along the elliptic NRHO members the perilune altitude falls with Id (Id 53: 17.1 km, Id 85: 7.8 km, Id ≥ 113 subsurface). **Id 53** (perilune 17.1 km, resonance distance 0.017) is the candidate mission-relevant family to compute next.
+
+### Update: NRHO Id 53 family (2026-10-02)
+* Id 53: perilune 17.1 km; frequency map regular up to amplitudes (8e-5, 8e-5) LU; start torus 8.1e-12 → 6.9e-13.
+* **114 tori, radius 1.35 → 14.7 km**, sup error median 4.5e-13 / 1.6e-12, max 9.9e-12 LU (`2668cea`, gzip-compressed). The largest QPOs stay ≥ 8.9 km above the surface.
+* Outer edge: around 14.7 km the attainable error rises (~1e-11 on 128×128; a run with tol-floor 3e-11 advanced only Δε ≈ 0.006). The floor grows with grid size (more small divisors amplifying map noise), so this is a limit of the section-map formulation at these sizes. Candidates to push further: tighter map evaluation (e.g. higher-order or extended-precision integration), or the flow-map/multiple-shooting formulation of Haro–Mondelo.
+* Speed: OpenMP map evaluation (`9eebd24`, 9.4× on 12 threads) and -O2 (`68a61af`, 3×).
+* Fixes: refinement only within 100× of tol-floor (`dc74b4d`); grid-size guard (`fea7958`).
