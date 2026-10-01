@@ -892,6 +892,22 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
     newparamR = paramR + LR * xiLR + NR * xiNR;
     newparamF = fft_F(newparamR);
 
+    /* Diagnostic: residual of the linearized equation DF(K) dK - dK(theta+omega) = -E */
+    {
+        matrix dKR = LR * xiLR + NR * xiNR;
+        matrix dKshiftR = fft_B(shift(fft_F(dKR), omega));
+        matrix linres = DFKR * dKR - dKshiftR + ErrorR;
+        cout << "#     - Residual of the linearized equation: " << norm(fft_F(linres)) << endl;
+        matrix symp = trans(LR) * OmegaKR * LR;
+        cout << "#     - Lagrangian defect |L^T Omega L|: " << norm(fft_F(symp)) << endl;
+        matrix frame = trans(LR) * OmegaKR * NR;
+        cout << "#     - Frame check |L^T Omega N + I| (should be 0): ";
+        for (int l = 0; l < nelem; l++)
+            for (int i = 0; i < DTOR; i++)
+                frame.coef[i][i].elem[l] = frame.coef[i][i].elem[l] + val1;
+        cout << norm(fft_F(frame)) << endl;
+    }
+
     delete[] index;
     for (int i = 0; i < DMAP; i++)
     {
