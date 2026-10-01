@@ -1,0 +1,7 @@
+Id 85  H = -1.50001743933381  mu = 1.9011097358926e-07  T = 2.2252679057769
+rho_lin = 0.34832065196698575 0.18550759837575581
+rho = 0.34800058696244451 0.18450378586264615
+domega = -3.200650e-04 -1.003813e-03
+amplitude = 4e-05
+inward:  param start.csv --domega -3.200650e-04 -1.003813e-03 --eps-max -0.95 --max-steps 3000 --tol-floor 1e-11  (step -0.01)
+outward: param start.csv --domega -3.200650e-04 -1.003813e-03 --eps-max 100 --max-steps 3000 --tol-floor 1e-11  (step +0.01)

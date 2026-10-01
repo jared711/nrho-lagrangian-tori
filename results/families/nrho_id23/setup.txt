@@ -1,0 +1,7 @@
+Id 23  H = -1.50001736411926  mu = 1.9011097358926e-07  T = 2.27599032017883
+rho_lin = 0.33637681898977762 0.10165315496998242
+rho = 0.33644869835050895 0.10079140149602633
+domega = 7.187936e-05 -8.617535e-04
+amplitude = 4e-05
+inward:  param start.csv --domega 7.187936e-05 -8.617535e-04 --eps-max -0.95 --max-steps 3000 --tol-floor 1e-11  (step -0.01)
+outward: param start.csv --domega 7.187936e-05 -8.617535e-04 --eps-max 100 --max-steps 3000 --tol-floor 1e-11  (step +0.01)
