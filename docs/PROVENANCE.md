@@ -68,6 +68,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 | `main.jl`, `dynamics.jl`, `parameterization-method.jl` (first 66 lines), `util.jl` | JB-2024 (uses Jared's `ThreeBodyProblem.jl` package) | AI-2026-08: `Vern9` in place of `TsitPap8`, `global uidx`, the `terminate!` import (`f160d04`), new file paths (`7e3f235`) |
 | `parameterization-method.jl` (KAM STEP 1 port), `test_kam_torus.jl`, `README.md` | AI-2026-08 (`6d53f3c`) | |
 | `family_analysis.jl` (family table and figures) | AI-2026-10 | |
+| `qpo_visualization.jl` (QPOs in configuration space) | AI-2026-10 | |
 | `pmap_tools.jl` (fixed points, NAFF frequency analysis, torus fitting, frequency map, dense collocation Newton) | AI-2026-10 | |
 
 ## Data (`data/`)
