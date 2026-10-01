@@ -36,3 +36,10 @@ Running log of the solver work, newest last. Commit hashes refer to this repo. S
 * Hybrid test: dense-Newton-cleaned torus (E = 2.3e-11) → kam_torus still diverges, both fixed-ω (→ 1.1e-8) and free-ω (→ 4.5e-9). Linearized residual 100–300× E.
 * The torus is Lagrangian to its error level (W/(2πs)² ~ 4e-7, mean ~1e-13), so a non-Lagrangian guess is ruled out.
 * Next: high-level review by three agents (literature on flow-map vs section-map methods; fresh code audit of kam_torus; numerical strategy).
+
+### Update: quasi-Newton fixed; first tori and a short family (2026-10-01, evening)
+* Correction: the stall was **not** a basin problem (as `115274c` and the entry above claimed). Agents found three bugs: one-sided Nyquist modes (`c76550b`), Newton step before the restart torus was saved (`cf9f7be`), and an under-resolved normal frame on eccentric tori (fixed by first-harmonic coordinates, `c4a0a83`, and pointwise N(θ+ω), `28700b7`). The final culprit was the absolute small-coefficient threshold in `cohomological()`, which zeroed ~85% of η_N for a torus of radius ~1e-5 (fixed by unit-circle coordinates `2f527c3` and a relative threshold `73ea3f0`).
+* Map noise floor: section tolerance 1e-14 (`04dcb00`). Floor ≈ 1.2e-11 LU (~3 mm) on a ~10 km torus. It is not set by the RK78 tolerance, `-ffast-math`, or grid size (it gets worse on finer grids: small divisors amplify the noise).
+* Stall detection (`491408d`) and Haro–Mondelo low-pass filter (`03032b6`): Newton converges 2.6e-10 → 1.2e-11 and stays there. **First accepted CR3BP torus** (NRHO Id 97).
+* Continuation in ω (`912714b`): 5 tori accepted up to ε = 0.125 (|Δω| ~ 6e-5), then stuck as the floor rises toward tol-floor. Refining the grid on stall made it worse (not committed).
+* Open: the source of the ~1e-11 floor; continuation step size; nearest resonance along the path is (−1, 7) at 3e-3.
