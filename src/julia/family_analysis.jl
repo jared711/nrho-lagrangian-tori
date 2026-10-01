@@ -2,7 +2,8 @@
 #
 # Usage:
 #   julia --project=. src/julia/family_analysis.jl <outprefix> <label1>=<dir1> [<label2>=<dir2> ...]
-# Each directory holds the output_torus<eps> files of one continuation branch and its run.log
+# Each directory holds the output_torus<eps> files of one continuation run and its run.log (several
+# directories of one branch can be given as dir1,dir2)
 # (or fam.log). Writes <outprefix>_table.csv and <outprefix>_*.png.
 
 using Printf, LinearAlgebra, FFTW, Plots
@@ -60,7 +61,9 @@ end
 function main(args)
     outprefix = args[1]
     branches = [(split(a, "=")[1], split(a, "=")[2]) for a in args[2:end]]
-    tables = [(lab, branch_table(dir)) for (lab, dir) in branches]
+    # a label may combine several directories (consecutive pieces of one branch), comma-separated;
+    # epsilon in the table is relative to the start torus of each piece
+    tables = [(lab, sort(vcat([branch_table(d) for d in split(dir, ",")]...), by=r -> r.omega2)) for (lab, dir) in branches]
 
     open(outprefix * "_table.csv", "w") do io
         println(io, "branch,eps,omega1,omega2,radius_km,grid,error_LU")
