@@ -1,175 +1,385 @@
-% Key references for NRHO Lagrangian Tori paper
+% References for the NRHO Lagrangian tori paper.
+% Rebuilt 2026-10-01; every field checked against Crossref, arXiv, zbMATH,
+% NASA NTRS, or the author/publisher page. Entries that could not be fully
+% checked carry note = {UNVERIFIED}.
 
-% Parameterization Method - Foundational Papers
+% ---------------------------------------------------------------------------
+% Parameterization method / KAM theory
+% ---------------------------------------------------------------------------
+
+@book{haro2016book,
+  author    = {Haro, {\`A}lex and Canadell, Marta and Figueras, Jordi-Llu{\'\i}s and Luque, Alejandro and Mondelo, Josep Maria},
+  title     = {The Parameterization Method for Invariant Manifolds: From Rigorous Results to Effective Computations},
+  series    = {Applied Mathematical Sciences},
+  volume    = {195},
+  publisher = {Springer},
+  address   = {Cham},
+  year      = {2016},
+  isbn      = {978-3-319-29660-9},
+  doi       = {10.1007/978-3-319-29662-3}
+}
+
+@incollection{haroluque2016ch4,
+  author    = {Haro, {\`A}lex and Luque, Alejandro},
+  title     = {The Parameterization Method in {KAM} Theory},
+  booktitle = {The Parameterization Method for Invariant Manifolds: From Rigorous Results to Effective Computations},
+  series    = {Applied Mathematical Sciences},
+  volume    = {195},
+  chapter   = {4},
+  pages     = {119--185},
+  publisher = {Springer},
+  address   = {Cham},
+  year      = {2016},
+  doi       = {10.1007/978-3-319-29662-3_4}
+}
+
+@article{figueras2017rigorous,
+  author        = {Figueras, Jordi-Llu{\'\i}s and Haro, {\`A}lex and Luque, Alejandro},
+  title         = {Rigorous Computer-Assisted Application of {KAM} Theory: A Modern Approach},
+  journal       = {Foundations of Computational Mathematics},
+  volume        = {17},
+  number        = {5},
+  pages         = {1123--1193},
+  year          = {2017},
+  doi           = {10.1007/s10208-016-9339-3},
+  eprint        = {1601.00084},
+  archiveprefix = {arXiv}
+}
+
+@article{haromondelo2021flow,
+  author        = {Haro, {\`A}lex and Mondelo, Josep-Maria},
+  title         = {Flow map parameterization methods for invariant tori in {H}amiltonian systems},
+  journal       = {Communications in Nonlinear Science and Numerical Simulation},
+  volume        = {101},
+  pages         = {105859},
+  year          = {2021},
+  doi           = {10.1016/j.cnsns.2021.105859},
+  eprint        = {2101.07665},
+  archiveprefix = {arXiv}
+}
+
+@article{haroluque2019partially,
+  author        = {Haro, {\`A}lex and Luque, Alejandro},
+  title         = {A-posteriori {KAM} theory with optimal estimates for partially integrable systems},
+  journal       = {Journal of Differential Equations},
+  volume        = {266},
+  number        = {2--3},
+  pages         = {1605--1674},
+  year          = {2019},
+  doi           = {10.1016/j.jde.2018.08.003},
+  eprint        = {1711.05515},
+  archiveprefix = {arXiv}
+}
+
+@article{fontich2009kam,
+  author        = {Fontich, Ernest and de la Llave, Rafael and Sire, Yannick},
+  title         = {Construction of invariant whiskered tori by a parameterization method. {P}art {I}: {M}aps and flows in finite dimensions},
+  journal       = {Journal of Differential Equations},
+  volume        = {246},
+  number        = {8},
+  pages         = {3136--3213},
+  year          = {2009},
+  doi           = {10.1016/j.jde.2009.01.037},
+  eprint        = {0903.0311},
+  archiveprefix = {arXiv}
+}
+
+@article{gonzalez2005kam,
+  author  = {Gonz{\'a}lez, Alejandra and Jorba, {\`A}ngel and de la Llave, Rafael and Villanueva, Jordi},
+  title   = {{KAM} theory without action-angle variables},
+  journal = {Nonlinearity},
+  volume  = {18},
+  number  = {2},
+  pages   = {855--895},
+  year    = {2005},
+  doi     = {10.1088/0951-7715/18/2/020}
+}
+
 @article{haro2006parameterization,
-  title={A parameterization method for the computation of invariant tori and their whiskers in quasi-periodic maps: numerical algorithms},
-  author={Haro, {\`A}lex and de la Llave, Rafael},
-  journal={Discrete and Continuous Dynamical Systems-Series B},
-  volume={6},
-  number={6},
-  pages={1261--1300},
-  year={2006}
+  author  = {Haro, {\`A}lex and de la Llave, Rafael},
+  title   = {A parameterization method for the computation of invariant tori and their whiskers in quasi-periodic maps: numerical algorithms},
+  journal = {Discrete and Continuous Dynamical Systems -- Series B},
+  volume  = {6},
+  number  = {6},
+  pages   = {1261--1300},
+  year    = {2006},
+  doi     = {10.3934/dcdsb.2006.6.1261}
 }
 
-@incollection{haro2016parameterization,
-  title={The parameterization method for invariant manifolds: from rigorous results to effective computations},
-  author={Haro, {\`A}lex and Canadell, Marta and Figueras, Jordi-Llu{\'\i}s and Luque, Alejandro and Mondelo, Josep-Maria},
-  booktitle={Applied Mathematical Sciences},
-  volume={195},
-  publisher={Springer},
-  year={2016}
+@article{kumar2022whiskered,
+  author        = {Kumar, Bhanu and Anderson, Rodney L. and de la Llave, Rafael},
+  title         = {Rapid and accurate methods for computing whiskered tori and their manifolds in periodically perturbed planar circular restricted 3-body problems},
+  journal       = {Celestial Mechanics and Dynamical Astronomy},
+  volume        = {134},
+  number        = {1},
+  pages         = {3},
+  year          = {2022},
+  doi           = {10.1007/s10569-021-10057-1},
+  eprint        = {2105.11100},
+  archiveprefix = {arXiv}
 }
 
-@article{haro2024convergence,
-  title={On the convergence of flow map parameterization methods in {H}amiltonian systems},
-  author={Haro, {\`A}lex and Fern{\'a}ndez-Mora, Cristian and Mondelo, Josep-Maria},
-  journal={SIAM Journal on Applied Dynamical Systems},
-  year={2024},
-  note={In press}
+@article{fernandezmora2024siads,
+  author  = {Fern{\'a}ndez-Mora, {\'A}lvaro and Haro, {\`A}lex and Mondelo, Josep-Maria},
+  title   = {Flow Map Parameterization Methods for Invariant Tori in Quasi-Periodic {H}amiltonian Systems},
+  journal = {SIAM Journal on Applied Dynamical Systems},
+  volume  = {23},
+  number  = {1},
+  pages   = {127--166},
+  year    = {2024},
+  doi     = {10.1137/23M1561257}
 }
 
-% KAM Theory - Classical References
-@article{kolmogorov1954conservation,
-  title={On conservation of conditionally periodic motions for a small change in {H}amilton's function},
-  author={Kolmogorov, Andrey Nikolaevich},
-  journal={Dokl. Akad. Nauk SSSR (NS)},
-  volume={98},
-  pages={527--530},
-  year={1954}
+@article{fernandezmora2026convergence,
+  author        = {Fern{\'a}ndez-Mora, {\'A}lvaro and Haro, {\`A}lex and Mondelo, Josep-Maria},
+  title         = {On the convergence of flow map parameterization methods for whiskered tori in quasi-periodic {H}amiltonian systems},
+  journal       = {Communications in Nonlinear Science and Numerical Simulation},
+  volume        = {152},
+  pages         = {109214},
+  year          = {2026},
+  doi           = {10.1016/j.cnsns.2025.109214},
+  eprint        = {2411.11772},
+  archiveprefix = {arXiv}
+}
+
+@article{wilczak2007lohner,
+  author        = {Wilczak, Daniel and Zgliczy{\'n}ski, Piotr},
+  title         = {{$C^r$}-{L}ohner algorithm},
+  journal       = {Schedae Informaticae},
+  volume        = {20},
+  year          = {2011},
+  doi           = {10.4467/20838476SI.11.001.0287},
+  eprint        = {0704.0720},
+  archiveprefix = {arXiv}
+}
+
+% ---------------------------------------------------------------------------
+% Classical KAM
+% ---------------------------------------------------------------------------
+
+@article{kolmogorov1954,
+  author  = {Kolmogorov, Andrei N.},
+  title   = {On the preservation of conditionally periodic motions under small variations of the {H}amilton function},
+  journal = {Doklady Akademii Nauk SSSR},
+  volume  = {98},
+  pages   = {527--530},
+  year    = {1954},
+  note    = {In Russian}
 }
 
 @article{arnold1963proof,
-  title={Proof of a theorem of {A.N. K}olmogorov on the invariance of quasi-periodic motions under small perturbations of the {H}amiltonian},
-  author={Arnold, Vladimir I},
-  journal={Russian Mathematical Surveys},
-  volume={18},
-  number={5},
-  pages={9--36},
-  year={1963}
+  author  = {Arnold, Vladimir I.},
+  title   = {Proof of a theorem of {A}. {N}. {K}olmogorov on the invariance of quasi-periodic motions under small perturbations of the {H}amiltonian},
+  journal = {Russian Mathematical Surveys},
+  volume  = {18},
+  number  = {5},
+  pages   = {9--36},
+  year    = {1963},
+  doi     = {10.1070/RM1963v018n05ABEH004130}
 }
 
-@article{moser1962invariant,
-  title={On invariant curves of area-preserving mappings of an annulus},
-  author={Moser, J{\"u}rgen K},
-  journal={Nachrichten der Akademie der Wissenschaften in G{\"o}ttingen. II. Mathematisch-Physikalische Klasse},
-  volume={1962},
-  pages={1--20},
-  year={1962}
+@article{moser1962,
+  author  = {Moser, J{\"u}rgen},
+  title   = {On invariant curves of area-preserving mappings of an annulus},
+  journal = {Nachrichten der Akademie der Wissenschaften in G{\"o}ttingen, II. Mathematisch-Physikalische Klasse},
+  volume  = {1962},
+  pages   = {1--20},
+  year    = {1962}
 }
 
-% CR3BP and Three-Body Problem
-@book{szebehely1967theory,
-  title={Theory of orbits: the restricted problem of three bodies},
-  author={Szebehely, Victor},
-  year={1967},
-  publisher={Academic press}
+% ---------------------------------------------------------------------------
+% Frequency analysis, normal forms, invariant tori computation
+% ---------------------------------------------------------------------------
+
+@article{laskar1993naff,
+  author  = {Laskar, Jacques},
+  title   = {Frequency analysis for multi-dimensional systems. {G}lobal dynamics and diffusion},
+  journal = {Physica D: Nonlinear Phenomena},
+  volume  = {67},
+  number  = {1--3},
+  pages   = {257--281},
+  year    = {1993},
+  doi     = {10.1016/0167-2789(93)90210-R}
 }
 
-@book{koon2011dynamical,
-  title={Dynamical systems, the three-body problem and space mission design},
-  author={Koon, Wang Sang and Lo, Martin W and Marsden, Jerrold E and Ross, Shane D},
-  year={2011},
-  publisher={Marsden Books}
+@article{laskar1990chaotic,
+  author  = {Laskar, Jacques},
+  title   = {The chaotic motion of the solar system: A numerical estimate of the size of the chaotic zones},
+  journal = {Icarus},
+  volume  = {88},
+  number  = {2},
+  pages   = {266--291},
+  year    = {1990},
+  doi     = {10.1016/0019-1035(90)90084-M}
 }
 
-% NRHOs and Applications
-@article{howell2021near,
-  title={Near rectilinear halo orbits and their application in cis-lunar space},
-  author={Howell, Kathleen C and Whitley, Ryan J and Lo, Martin W and Boudad, Kenza K and Guzzetti, Davide},
-  journal={Advances in Space Research},
-  volume={67},
-  number={6},
-  pages={1724--1737},
-  year={2021},
-  publisher={Elsevier}
+@article{jorba1999normal,
+  author  = {Jorba, {\`A}ngel},
+  title   = {A Methodology for the Numerical Computation of Normal Forms, Centre Manifolds and First Integrals of {H}amiltonian Systems},
+  journal = {Experimental Mathematics},
+  volume  = {8},
+  number  = {2},
+  pages   = {155--195},
+  year    = {1999},
+  doi     = {10.1080/10586458.1999.10504397}
 }
 
-@article{whitley2016options,
-  title={Options for staging orbits in cislunar space},
-  author={Whitley, Ryan and Martinez, Roland},
-  journal={IEEE Aerospace Conference},
-  pages={1--9},
-  year={2016}
+@article{gomezmondelo2001,
+  author  = {G{\'o}mez, Gerard and Mondelo, Josep Maria},
+  title   = {The dynamics around the collinear equilibrium points of the {RTBP}},
+  journal = {Physica D: Nonlinear Phenomena},
+  volume  = {157},
+  number  = {4},
+  pages   = {283--321},
+  year    = {2001},
+  doi     = {10.1016/S0167-2789(01)00312-8}
 }
 
-% Quasi-Periodic Orbits in Astrodynamics
-@article{gomez2001quasi,
-  title={Quasi-periodic orbits in the {E}arth-{M}oon system},
-  author={G{\'o}mez, Gerard and Mondelo, Josep Maria},
-  journal={Celestial Mechanics and Dynamical Astronomy},
-  volume={80},
-  number={3-4},
-  pages={251--267},
-  year={2001}
+@article{jorba2001numerical,
+  author  = {Jorba, {\`A}ngel},
+  title   = {Numerical computation of the normal behaviour of invariant curves of {$n$}-dimensional maps},
+  journal = {Nonlinearity},
+  volume  = {14},
+  number  = {5},
+  pages   = {943--976},
+  year    = {2001},
+  doi     = {10.1088/0951-7715/14/5/303}
 }
 
-@article{jorba1999numerical,
-  title={A numerical study of the existence of stable motions near the triangular points of the real {E}arth-{M}oon system},
-  author={Jorba, {\`A}ngel and Villanueva, Jordi},
-  journal={Astronomy and Astrophysics},
-  volume={351},
-  pages={1133--1144},
-  year={1999}
+@article{schilder2005continuation,
+  author  = {Schilder, Frank and Osinga, Hinke M. and Vogt, Werner},
+  title   = {Continuation of Quasi-periodic Invariant Tori},
+  journal = {SIAM Journal on Applied Dynamical Systems},
+  volume  = {4},
+  number  = {3},
+  pages   = {459--488},
+  year    = {2005},
+  doi     = {10.1137/040611240}
 }
 
-% Fourier Methods and Numerical Analysis
-@article{castelli2015parameterization,
-  title={Parameterization of invariant manifolds for periodic orbits {I}: {E}fficient numerics via the {F}loquet normal form},
-  author={Castelli, Roberto and Lessard, Jean-Philippe and Mireles James, J.D.},
-  journal={SIAM Journal on Applied Dynamical Systems},
-  volume={14},
-  number={1},
-  pages={132--167},
-  year={2015}
+% ---------------------------------------------------------------------------
+% Astrodynamics: NRHOs, Enceladus, quasi-periodic orbits
+% ---------------------------------------------------------------------------
+
+@article{davis2018saturnian,
+  author  = {Davis, Diane Craig and Phillips, Sean M. and McCarthy, Brian P.},
+  title   = {Trajectory design for {S}aturnian {O}cean {W}orlds orbiters using multidimensional {P}oincar{\'e} maps},
+  journal = {Acta Astronautica},
+  volume  = {143},
+  pages   = {16--28},
+  year    = {2018},
+  doi     = {10.1016/j.actaastro.2017.11.004}
 }
 
-% Enceladus Missions
 @article{cable2021enceladus,
-  title={The science case for a mission to {E}nceladus},
-  author={Cable, Morgan L and Eigenbrode, Jennifer L and Kirby, Kate and Lorenz, Ralph D and MacKenzie, Shannon M and Neveu, Marc and Dougherty, Michele K and Glein, Christopher R and Hofmann, Amy E and Mathies, Richard A and others},
-  journal={The Planetary Science Journal},
-  volume={2},
-  number={4},
-  pages={132},
-  year={2021}
+  author  = {Cable, Morgan L. and Porco, Carolyn and Glein, Christopher R. and German, Christopher R. and MacKenzie, Shannon M. and Neveu, Marc and Hoehler, Tori M. and Hofmann, Amy E. and Hendrix, Amanda R. and Eigenbrode, Jennifer and Postberg, Frank and Spilker, Linda J. and McEwen, Alfred and Khawaja, Nozair and Waite, J. Hunter and Wurz, Peter and Helbert, J{\"o}rn and Anbar, Ariel and de Vera, Jean-Pierre and N{\'u}{\~n}ez, Jorge},
+  title   = {The Science Case for a Return to {E}nceladus},
+  journal = {The Planetary Science Journal},
+  volume  = {2},
+  number  = {4},
+  pages   = {132},
+  year    = {2021},
+  doi     = {10.3847/PSJ/abfb7a}
 }
 
-% Numerical Integration
-@book{hairer1993solving,
-  title={Solving ordinary differential equations {I}: nonstiff problems},
-  author={Hairer, Ernst and N{\o}rsett, Syvert Paul and Wanner, Gerhard},
-  volume={8},
-  year={1993},
-  publisher={Springer}
+@inproceedings{zimovan2017nrho,
+  author    = {Zimovan, Emily M. and Howell, Kathleen C. and Davis, Diane C.},
+  title     = {Near Rectilinear Halo Orbits and Their Application in Cis-Lunar Space},
+  booktitle = {3rd IAA Conference on Dynamics and Control of Space Systems},
+  address   = {Moscow, Russia},
+  year      = {2017},
+  note      = {Paper IAA-AAS-DyCoSS3-125}
 }
 
-% Symplectic Geometry
-@book{arnold1989mathematical,
-  title={Mathematical methods of classical mechanics},
-  author={Arnold, Vladimir I},
-  volume={60},
-  year={1989},
-  publisher={Springer}
+@article{zimovanspreen2020,
+  author  = {Zimovan-Spreen, Emily M. and Howell, Kathleen C. and Davis, Diane C.},
+  title   = {Near rectilinear halo orbits and nearby higher-period dynamical structures: orbital stability and resonance properties},
+  journal = {Celestial Mechanics and Dynamical Astronomy},
+  volume  = {132},
+  number  = {5},
+  pages   = {28},
+  year    = {2020},
+  doi     = {10.1007/s10569-020-09968-2}
 }
 
-% Validated Numerics
-@article{haro2014methodology,
-  title={A methodology for the numerical computation of normal forms, centre manifolds and first integrals of {H}amiltonian systems},
-  author={Haro, {\`A}lex and de la Llave, Rafael},
-  journal={Journal of Computational Dynamics},
-  volume={1},
-  number={1},
-  pages={13--68},
-  year={2014}
+@inproceedings{whitley2016options,
+  author    = {Whitley, Ryan and Martinez, Roland},
+  title     = {Options for staging orbits in cislunar space},
+  booktitle = {2016 IEEE Aerospace Conference},
+  pages     = {1--9},
+  publisher = {IEEE},
+  year      = {2016},
+  doi       = {10.1109/AERO.2016.7500635}
 }
 
-% Mission Design
-@article{davis2017trajectory,
-  title={Trajectory design for {S}aturn's icy moon explorer ({SIME}) orbiter},
-  author={Davis, Diane C and Howell, Kathleen C and Morales, Jason J and Webster, Cassandra M},
-  journal={The Journal of the Astronautical Sciences},
-  volume={64},
-  number={3},
-  pages={251--278},
-  year={2017}
+@phdthesis{olikara2016computation,
+  author = {Olikara, Zubin P.},
+  title  = {Computation of Quasi-Periodic Tori and Heteroclinic Connections in Astrodynamics Using Collocation Techniques},
+  school = {University of Colorado Boulder},
+  year   = {2016},
+  url    = {https://scholar.colorado.edu/concern/graduate_thesis_or_dissertations/c247ds34j}
+}
+
+@article{baresi2018qpo,
+  author  = {Baresi, Nicola and Olikara, Zubin P. and Scheeres, Daniel J.},
+  title   = {Fully Numerical Methods for Continuing Families of Quasi-Periodic Invariant Tori in Astrodynamics},
+  journal = {The Journal of the Astronautical Sciences},
+  volume  = {65},
+  number  = {2},
+  pages   = {157--182},
+  year    = {2018},
+  doi     = {10.1007/s40295-017-0124-6}
+}
+
+@article{mccarthy2021qpo,
+  author  = {McCarthy, Brian P. and Howell, Kathleen C.},
+  title   = {Leveraging quasi-periodic orbits for trajectory design in cislunar space},
+  journal = {Astrodynamics},
+  volume  = {5},
+  number  = {2},
+  pages   = {139--165},
+  year    = {2021},
+  doi     = {10.1007/s42064-020-0094-5}
+}
+
+% ---------------------------------------------------------------------------
+% Textbooks and numerical integration
+% ---------------------------------------------------------------------------
+
+@book{szebehely1967,
+  author    = {Szebehely, Victor},
+  title     = {Theory of Orbits: The Restricted Problem of Three Bodies},
+  publisher = {Academic Press},
+  address   = {New York},
+  year      = {1967}
+}
+
+@book{koon2011,
+  author    = {Koon, Wang Sang and Lo, Martin W. and Marsden, Jerrold E. and Ross, Shane D.},
+  title     = {Dynamical Systems, the Three-Body Problem and Space Mission Design},
+  publisher = {Marsden Books},
+  year      = {2022},
+  isbn      = {978-0-615-24095-4}
+}
+
+@book{hairer1993,
+  author    = {Hairer, Ernst and N{\o}rsett, Syvert P. and Wanner, Gerhard},
+  title     = {Solving Ordinary Differential Equations {I}: Nonstiff Problems},
+  edition   = {2nd},
+  series    = {Springer Series in Computational Mathematics},
+  volume    = {8},
+  publisher = {Springer},
+  address   = {Berlin},
+  year      = {1993},
+  doi       = {10.1007/978-3-540-78862-1}
+}
+
+@techreport{fehlberg1968rk78,
+  author      = {Fehlberg, Erwin},
+  title       = {Classical Fifth-, Sixth-, Seventh-, and Eighth-Order {R}unge-{K}utta Formulas with Stepsize Control},
+  institution = {NASA},
+  type        = {Technical Report},
+  number      = {NASA-TR-R-287},
+  year        = {1968},
+  url         = {https://ntrs.nasa.gov/citations/19680027281}
 }
