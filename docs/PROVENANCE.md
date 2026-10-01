@@ -24,7 +24,7 @@ from git history.
 
 | File | Origin | Later changes |
 |---|---|---|
-| `headers/grid.h`, `headers/matrix.h`, `headers/complex.h` | BCN-KAM | JB-2024: debug prints added to the `matrix` copy constructor and `fft_F` (`ca0df7c`) |
+| `headers/grid.h`, `headers/matrix.h`, `headers/complex.h` | BCN-KAM | JB-2024: debug prints added to the `matrix` copy constructor and `fft_F` (`ca0df7c`). AI-2026-10: Nyquist modes zeroed in `deriva`, `shift`, `cohomological` (`grid.h`) |
 | `rtbphp.c`, `seccp.c`, `fluxvp.c`, `rk78vp.c`, `campvp.c`, `scread.c`, `vbprintf.c`, `headers/{rtbphp,seccp,fluxvp,rk78vp,campvp,scread,vbprintf,utils}.h` | BCN-RTBP | JB-2024: English translations of the Catalan comments, argument documentation in `seccp.c`, reformatting. The "RTBP" integrator settings in `fluxvp.c` (`fluxvp_tol=4e-14`, etc.) were already in the first commit, so they are BCN-RTBP |
 | `param.cc`: `kam_torus()`, `realloc_torus()`, the continuation/Newton driver in `main()`, and the standard and Froeschle maps | BCN-KAM | see below |
 | `param.cc`: `nu()`, `get_p3()`, `get_dp3()`, `map_CR3BP()`, `sform_CR3BP()`, `gform_CR3BP()`, `normal0_CR3BP()`, `wrtf()`, `state2ham()`, the `DTOR/DMAP/NPAR` settings for the CR3BP, and the input-file reading | JB-2024 ("functions created by Jared Blanchard May, 2024") | see below |
@@ -35,6 +35,7 @@ Changes to BCN-KAM code inside `param.cc`:
 * AI-2026-08 (`c52cac6`): commented out the second `kam_torus()` call and added `MAX_CONT_STEPS`/`MAX_EPSILON`. **The diagnosis behind this change was wrong.** Repeating a Newton step is correct; the error grew because of the bugs fixed in AI-2026-10.
 * AI-2026-10 (`5a16052`): removed the remaining angle lift on K(θ+ω).
 * AI-2026-10: removed the unconditional `kam_torus()` call before the continuation loop (found by a code-audit agent).
+* AI-2026-10: `realloc_torus()` drops Nyquist coefficients when refining the grid (found by a code-audit agent).
 * AI-2026-10 (`6ee5174`): `kam_torus()` returns −1 when the Poincaré map failed.
 * AI-2026-10 (`f83e8f0`): `kam_torus()` prints diagnostics after each step: the residual of the linearized equation, the Lagrangian defect, and the symplectic-frame check. `3c7ad63`: also the averaged torsion ⟨T⟩.
 * AI-2026-10: `map_twist()`, `gform_identity()` and the `--test-twist` mode, an integrable twist map that validates `kam_torus()` on Cartesian (non-lifted) tori.

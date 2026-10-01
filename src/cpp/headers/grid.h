@@ -684,6 +684,17 @@ void indices(int pos, int *nn, int *index, int ndim)
     index[0]=pos0;
 }
 
+/* Nyquist modes (index[j] == nn[j]/2 in some direction) have no conjugate partner on the
+   grid: trigo_to_series maps them to -nn[j]/2 only, so differentiating, shifting or solving a
+   cohomological equation for them produces non-Hermitian spectra (complex functions in real
+   space), whose imaginary parts are later dropped by inv() and aver(). They are set to zero
+   by deriva, shift and cohomological. (Added 2026-10-01; see docs/PROVENANCE.md.) */
+static inline int is_nyquist(const grid& g, int *index)
+{
+    for(int j=0;j<g.ndim;j++) if (2*index[j]==g.nn[j]) return 1;
+    return 0;
+}
+
 grid deriva (const grid& g, int k)
 /*
    Given a grid of Fourier coefficients of a ndim-periodic function
@@ -706,6 +717,7 @@ grid deriva (const grid& g, int k)
         trigo_to_series(g.nn,index,index_serie,g.ndim);
         aux=index_serie[k];
         dg.elem[i]=complex(0.0,pi2*aux)*g.elem[i];
+        if (is_nyquist(g,index)) dg.elem[i]=0.0;
     }
 
     delete [] index;    
@@ -736,6 +748,7 @@ grid shift (const grid& g, double *omega)
         aux=0.0;
         for(int j=0;j<g.ndim;j++) aux = aux + index_serie[j]*omega[j];
         shiftg.elem[i]=complex(cos(pi2*aux),sin(pi2*aux))*g.elem[i];
+        if (is_nyquist(g,index)) shiftg.elem[i]=0.0;
     }
 
     delete [] index;    
@@ -803,6 +816,7 @@ grid cohomological (const grid& g, double *omega)
         if (aux1<tolgrid) coho.elem[i]=complex(0.0,0.0);
         else coho.elem[i]=g.elem[i]/(1.0-complex(cos(pi2*aux),sin(pi2*aux)));
         //coho.elem[i]=g.elem[i]/(1.0-complex(cos(pi2*aux),sin(pi2*aux)));
+        if (is_nyquist(g,index)) coho.elem[i]=0.0;
     }
 
     delete [] index;    

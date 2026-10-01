@@ -629,6 +629,14 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+static int nyquist_index(int *nn, int *index)
+{
+    for (int j = 0; j < DTOR; j++)
+        if (2 * index[j] == nn[j])
+            return 1;
+    return 0;
+}
+
 void realloc_torus(matrix &paramR, matrix &paramF,
                    matrix &paramR0, matrix &paramF0,
                    int &nelem, int *nn, int *newnn)
@@ -645,6 +653,8 @@ void realloc_torus(matrix &paramR, matrix &paramF,
     for (int l = 0; l < nelem; l++)
     {
         indices(l, nn, index, DTOR);
+        if (nyquist_index(nn, index)) // has no conjugate partner; copying it one-sided makes K complex
+            continue;
         trigo_to_series(nn, index, indexserie, DTOR);
         series_to_trigo(newnn, indexserie, index, DTOR);
         pos = position(newnn, index, DTOR);
@@ -656,6 +666,8 @@ void realloc_torus(matrix &paramR, matrix &paramF,
     for (int l = 0; l < nelem; l++)
     {
         indices(l, nn, index, DTOR);
+        if (nyquist_index(nn, index)) // has no conjugate partner; copying it one-sided makes K complex
+            continue;
         trigo_to_series(nn, index, indexserie, DTOR);
         series_to_trigo(newnn, indexserie, index, DTOR);
         pos = position(newnn, index, DTOR);
