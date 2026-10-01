@@ -128,6 +128,7 @@ myreal tolinte;      // Tolerance on intermediate computation (e.g. matrix inver
 /* Global variables of the problem */
 myreal *lambda; // Fixed parameters or constants
 myreal epsilon; // Continuation parameter
+int map_failures = 0; // Number of failed Poincare map evaluations since last check
 
 fstream file_torus, file_input;
 
@@ -651,6 +652,15 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
         }
     }
 
+    if (map_failures > 0)
+    {
+        cout << "#     - Poincare map failed at " << map_failures << " grid points" << endl;
+        map_failures = 0;
+        for (int i = 0; i < DTOR; i++)
+            tails[i] = 0;
+        return -1;
+    }
+
     KshiftF = shift(paramF, omega);
     KshiftR = fft_B(KshiftF);
 
@@ -1082,8 +1092,10 @@ void map_CR3BP(complex *z, complex *fz, complex **Dfz, complex *depfz)
      * maxts : maximum time to integrate
      */
     double Dtau[6]; // initialize the derivative of the time of flight with respect to the initial condition (gets filled in within seccp)
-    seccp(6 /*n*/, 42 /*nv*/, 0 /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t /*&t*/, x /*x*/, &h /*&h*/, cp /*psec hyperplane*/,
-          1 /*nsec*/, isiggrad /*isiggrad*/, tolJM /*tol*/, 0 /*ivb*/, 1 /*idt*/, Dtau /*dt*/, wrtf /*write function*/, fp /*filename*/, 13 /*maxts*/);
+    int sec_ret = seccp(6 /*n*/, 42 /*nv*/, 0 /*np*/, rtbphp /*camp*/, &mu /*prm*/, &t /*&t*/, x /*x*/, &h /*&h*/, cp /*psec hyperplane*/,
+          1 /*nsec*/, isiggrad /*isiggrad*/, tolJM /*tol*/, 0 /*ivb*/, 1 /*idt*/, Dtau /*dt*/, wrtf /*write function*/, fp /*filename*/, maxts /*maxts*/);
+    if (sec_ret < 0 || x[5] != x[5]) // seccp failed, or p3 is NaN (point is off the energy surface)
+        map_failures++;
 
     fz[0].real = x[0]; // x
     fz[0].imag = val0;
