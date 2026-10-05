@@ -78,14 +78,14 @@ using namespace std;
 // #define DMAP (2)    // Dimension of phase space
 // #define NPAR (0)    // Number of (constant) parameters in the map
 // #define MNEW (10)   // Maximum number of Newton iterations
-// #define MAXF (65536) // Maximum number of grid points allowed (e.g. 512 x 128 or 256 x 256)
+// #define MAXF (262144) // Maximum number of grid points allowed (e.g. 512 x 512)
 
 // CR3BP map
 #define DTOR (2)    // Dimension of the invariant torus because I'm doing the generator of the full lagrangian torus
 #define DMAP (4)    // Dimension of phase space (5/8/24, we've reduced the dimnsion to 4 because we're constraining C and y=0 with a Poincare map)
 #define NPAR (2)    // Number of (constant) parameters in the map
 #define MNEW (10)   // Maximum number of Newton iterations
-#define MAXF (65536) // Maximum number of grid points allowed (e.g. 512 x 128 or 256 x 256)
+#define MAXF (262144) // Maximum number of grid points allowed (e.g. 512 x 512)
 
 int position(int *nn, int *index, int ndim);
 void indices(int pos, int *nn, int *index, int ndim);
