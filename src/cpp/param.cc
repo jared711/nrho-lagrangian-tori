@@ -716,6 +716,7 @@ int main(int argc, char *argv[])
            best torus seen and stop when a step fails to reduce the error by 10%. The best torus is accepted
            as converged if its error is below tolfloor (physical units, --tol-floor). */
         double best_error = DBL_MAX, prev_error = DBL_MAX;
+        myreal best_edge[DTOR] = {0.0, 0.0}; // error spectrum near the cutoff, at the best torus
         int refined_on_stall = 0;
         matrix bestR, bestF;
         myreal best_omega[DTOR];
@@ -732,12 +733,17 @@ int main(int argc, char *argv[])
                 if (error < best_error)
                 {
                     best_error = error;
+                    for (int i = 0; i < DTOR; i++)
+                        best_edge[i] = edge_frac[i];
                     bestR = entryR;
                     bestF = entryF;
                     for (int i = 0; i < DTOR; i++)
                         best_omega[i] = entry_omega[i];
                 }
-                if (error > 0.9 * prev_error && best_error >= tolfloor && best_error < 100.0 * tolfloor && 2 * nelem <= MAXF && !refined_on_stall)
+                /* refine only if the best torus is truncated: some angle has >= 20% of its error spectrum
+                   just below the filter cutoff (otherwise the stall is a predictor that left the basin) */
+                int truncated = (best_edge[0] >= 0.2 || best_edge[1] >= 0.2);
+                if (error > 0.9 * prev_error && best_error >= tolfloor && best_error < 100.0 * tolfloor && truncated && 2 * nelem <= MAXF && !refined_on_stall)
                 {
                     /* Stalled above tol-floor but within 100x of it (a truncation floor; a stall far
                        above it is a predictor that left the basin, handled by halving the step):
@@ -753,12 +759,12 @@ int main(int argc, char *argv[])
                     for (int i = 0; i < DTOR; i++)
                     {
                         omega[i] = best_omega[i];
-                        ref[i] = (edge_frac[i] >= 0.2) ? 1 : 0;
+                        ref[i] = (best_edge[i] >= 0.2) ? 1 : 0;
                         nref += ref[i];
                     }
-                    if (nref == 0 || (nref == DTOR && 4 * nelem > MAXF))
+                    if (nref == DTOR && 4 * nelem > MAXF)
                     {
-                        int jmax = (edge_frac[1] > edge_frac[0]) ? 1 : 0;
+                        int jmax = (best_edge[1] > best_edge[0]) ? 1 : 0;
                         for (int i = 0; i < DTOR; i++)
                             ref[i] = (i == jmax) ? 1 : 0;
                     }
