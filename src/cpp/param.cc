@@ -905,6 +905,31 @@ int main(int argc, char *argv[])
                     paramFm1 = fft_F(paramRm1);
                 }
             }
+
+            /* Proactive refinement: a torus accepted just below tol-floor on a grid that truncates it
+               leaves the next continuation step no margin (steps then shrink without end). If the
+               accepted error is above 30% of tol-floor and some angle has >= 20% of its error
+               spectrum just below the filter cutoff, refine that angle before the next step. */
+            if (error > 0.3 * tolfloor && (best_edge[0] >= 0.2 || best_edge[1] >= 0.2) && 2 * nelem <= MAXF)
+            {
+                int nr = 0;
+                for (int i = 0; i < DTOR; i++)
+                {
+                    newnn[i] = (best_edge[i] >= 0.2) ? 2 * nn[i] : nn[i];
+                    nr += (newnn[i] != nn[i]);
+                }
+                if (nr == DTOR && 4 * nelem > MAXF)
+                {
+                    int jmax = (best_edge[1] > best_edge[0]) ? 1 : 0;
+                    for (int i = 0; i < DTOR; i++)
+                        newnn[i] = (i == jmax) ? 2 * nn[i] : nn[i];
+                }
+                paramR = paramR0;
+                paramF = paramF0;
+                realloc_torus(paramR, paramF, paramR0, paramF0, nelem, nn, newnn);
+                have_prev = 0;
+                cout << "# Accepted torus close to tol-floor and truncated; refining the grid to " << nn[0] << " x " << nn[1] << endl;
+            }
         }
         else
         {
