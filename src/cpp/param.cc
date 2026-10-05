@@ -78,14 +78,14 @@ using namespace std;
 // #define DMAP (2)    // Dimension of phase space
 // #define NPAR (0)    // Number of (constant) parameters in the map
 // #define MNEW (10)   // Maximum number of Newton iterations
-// #define MAXF (16384) // Maximum number of Fourier coefficients allowed (128 x 128)
+// #define MAXF (65536) // Maximum number of grid points allowed (e.g. 512 x 128 or 256 x 256)
 
 // CR3BP map
 #define DTOR (2)    // Dimension of the invariant torus because I'm doing the generator of the full lagrangian torus
 #define DMAP (4)    // Dimension of phase space (5/8/24, we've reduced the dimnsion to 4 because we're constraining C and y=0 with a Poincare map)
 #define NPAR (2)    // Number of (constant) parameters in the map
 #define MNEW (10)   // Maximum number of Newton iterations
-#define MAXF (16384) // Maximum number of Fourier coefficients allowed (128 x 128)
+#define MAXF (65536) // Maximum number of grid points allowed (e.g. 512 x 128 or 256 x 256)
 
 int position(int *nn, int *index, int ndim);
 void indices(int pos, int *nn, int *index, int ndim);
@@ -134,6 +134,7 @@ myreal tolinte;      // Tolerance on intermediate computation (e.g. matrix inver
 myreal *lambda; // Fixed parameters or constants
 myreal epsilon; // Continuation parameter
 int map_failures = 0; // Number of failed Poincare map evaluations since last check
+myreal edge_frac[2] = {0.0, 0.0}; // fraction of the error spectrum near the filter cutoff, per angle
 int free_frequency = 0; // 1: Newton corrects omega and fixes the average normal correction (--free-omega)
 myreal tolfloor = 1e-10; // accept a stalled Newton iteration if its best error is below this (physical, --tol-floor)
 myreal domega_cont[DTOR] = {0.0, 0.0}; // continuation direction in omega per unit epsilon (--domega)
@@ -354,6 +355,8 @@ int main(int argc, char *argv[])
             lowpass_filter = 0;
         else if (strcmp(argv[i], "--no-real") == 0)
             project_real = 0;
+        else if (strcmp(argv[i], "--tol-coho") == 0 && i + 1 < argc)
+            tolcoho = atof(argv[++i]);
         else if (strcmp(argv[i], "--fixed-frame") == 0)
             rebuild_frame = 0;
 
@@ -734,7 +737,7 @@ int main(int argc, char *argv[])
                     for (int i = 0; i < DTOR; i++)
                         best_omega[i] = entry_omega[i];
                 }
-                if (error > 0.9 * prev_error && best_error >= tolfloor && best_error < 100.0 * tolfloor && 4 * nelem <= MAXF && !refined_on_stall)
+                if (error > 0.9 * prev_error && best_error >= tolfloor && best_error < 100.0 * tolfloor && 2 * nelem <= MAXF && !refined_on_stall)
                 {
                     /* Stalled above tol-floor but within 100x of it (a truncation floor; a stall far
                        above it is a predictor that left the basin, handled by halving the step):
@@ -743,11 +746,24 @@ int main(int argc, char *argv[])
                        is too large, double N), from the best torus, at the same epsilon. */
                     paramR = bestR;
                     paramF = bestF;
+                    /* Refine only the direction(s) where the error sits near the filter cutoff (the
+                       NRHO tori typically need many more modes in one angle than in the other); if
+                       neither does, the one with the larger fraction. */
+                    int ref[DTOR], nref = 0;
                     for (int i = 0; i < DTOR; i++)
                     {
                         omega[i] = best_omega[i];
-                        newnn[i] = 2 * nn[i];
+                        ref[i] = (edge_frac[i] >= 0.2) ? 1 : 0;
+                        nref += ref[i];
                     }
+                    if (nref == 0 || (nref == DTOR && 4 * nelem > MAXF))
+                    {
+                        int jmax = (edge_frac[1] > edge_frac[0]) ? 1 : 0;
+                        for (int i = 0; i < DTOR; i++)
+                            ref[i] = (i == jmax) ? 1 : 0;
+                    }
+                    for (int i = 0; i < DTOR; i++)
+                        newnn[i] = ref[i] ? 2 * nn[i] : nn[i];
                     realloc_torus(paramR, paramF, paramR0, paramF0, nelem, nn, newnn);
                     have_prev = 0;
                     refined_on_stall = 1;
@@ -1156,6 +1172,29 @@ int kam_torus(matrix &paramR, matrix &paramF, myreal *omega, myreal &error, int 
         }
     cout << "#     - Error of invariance: ";
     cout << error << " (max over grid, physical), " << norm(ErrorF) << " (Fourier l1, local)" << endl;
+    {
+        /* Fraction of the error spectrum just below the filter cutoff (3 n_j/16 <= |k_j| < n_j/4) in
+           each direction: a large fraction means the torus needs more Fourier modes in that
+           direction (truncation), and the grid is refined there (see main). */
+        double total = 0.0, band[DTOR] = {0.0, 0.0};
+        for (int l = 0; l < nelem; l++)
+        {
+            int idx[DTOR], ser[DTOR];
+            indices(l, nn, idx, DTOR);
+            trigo_to_series(nn, idx, ser, DTOR);
+            double a = 0.0;
+            for (int i = 0; i < DMAP; i++)
+                a += abs(ErrorF.coef[i][0].elem[l]);
+            total += a;
+            for (int j = 0; j < DTOR; j++)
+                if (16 * abs(ser[j]) >= 3 * nn[j] && 4 * abs(ser[j]) < nn[j])
+                    band[j] += a;
+        }
+        for (int j = 0; j < DTOR; j++)
+            edge_frac[j] = (total > 0.0) ? band[j] / total : 0.0;
+        cout << "#     - Error spectrum near the filter cutoff: " << 100.0 * edge_frac[0] << "% (theta1), "
+             << 100.0 * edge_frac[1] << "% (theta2)" << endl;
+    }
 
     if (error < tolinva)
     {

@@ -88,6 +88,7 @@ double normexp(const grid& g, const double& rho);
 int compare (const void * a, const void * b);
 
 double tolgrid;
+double tolcoho = -1.0; // relative threshold of cohomological() (if < 0, tolgrid is used); --tol-coho in param
 
 grid::grid()
 {
@@ -818,7 +819,7 @@ grid cohomological (const grid& g, double *omega)
         for(int j=0;j<g.ndim;j++) aux = aux + index_serie[j]*omega[j];
         
         aux1=abs(g.elem[i]);
-        if (aux1<tolgrid*gmax) coho.elem[i]=complex(0.0,0.0);
+        if (aux1<(tolcoho >= 0.0 ? tolcoho : tolgrid)*gmax) coho.elem[i]=complex(0.0,0.0);
         else coho.elem[i]=g.elem[i]/(1.0-complex(cos(pi2*aux),sin(pi2*aux)));
         //coho.elem[i]=g.elem[i]/(1.0-complex(cos(pi2*aux),sin(pi2*aux)));
         if (is_nyquist(g,index)) coho.elem[i]=0.0;

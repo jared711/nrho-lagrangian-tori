@@ -24,7 +24,7 @@ from git history.
 
 | File | Origin | Later changes |
 |---|---|---|
-| `headers/grid.h`, `headers/matrix.h`, `headers/complex.h` | BCN-KAM | JB-2024: debug prints added to the `matrix` copy constructor and `fft_F` (`ca0df7c`). AI-2026-10: Nyquist modes zeroed in `deriva`, `shift`, `cohomological`; `cohomological` threshold made relative (`grid.h`) |
+| `headers/grid.h`, `headers/matrix.h`, `headers/complex.h` | BCN-KAM | JB-2024: debug prints added to the `matrix` copy constructor and `fft_F` (`ca0df7c`). AI-2026-10: Nyquist modes zeroed in `deriva`, `shift`, `cohomological`; `cohomological` threshold made relative, optional separate threshold `tolcoho` (`grid.h`) |
 | `rtbphp.c`, `seccp.c`, `fluxvp.c`, `rk78vp.c`, `campvp.c`, `scread.c`, `vbprintf.c`, `headers/{rtbphp,seccp,fluxvp,rk78vp,campvp,scread,vbprintf,utils}.h` | BCN-RTBP | JB-2024: English translations of the Catalan comments, argument documentation in `seccp.c`, reformatting. The "RTBP" integrator settings in `fluxvp.c` (`fluxvp_tol=4e-14`, etc.) were already in the first commit, so they are BCN-RTBP |
 | `param.cc`: `kam_torus()`, `realloc_torus()`, the continuation/Newton driver in `main()`, and the standard and Froeschle maps | BCN-KAM | see below |
 | `param.cc`: `nu()`, `get_p3()`, `get_dp3()`, `map_CR3BP()`, `sform_CR3BP()`, `gform_CR3BP()`, `normal0_CR3BP()`, `wrtf()`, `state2ham()`, the `DTOR/DMAP/NPAR` settings for the CR3BP, and the input-file reading | JB-2024 ("functions created by Jared Blanchard May, 2024") | see below |
@@ -55,7 +55,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 * AI-2026-10: error of invariance measured as the max over the grid of |E| in physical coordinates (was the Fourier l1 norm in local units); `tolinva` stays physical.
 * AI-2026-10: imaginary parts of K dropped after each Newton step (`--no-real` disables), with a diagnostic print.
 * AI-2026-10: local-frame construction moved to `build_local_frame()`; the frame is rebuilt from each accepted continuation step (`--fixed-frame` keeps it fixed); `local_to_physical()`, `physical_to_local()`.
-* AI-2026-10: grid refinement when Newton stalls above `--tol-floor` (once per Newton loop). Refinement only within 100× of the floor.
+* AI-2026-10: grid refinement when Newton stalls above `--tol-floor` (once per Newton loop). Refinement only within 100× of the floor; anisotropic (only the angle whose error sits near the filter cutoff), up to 65536 grid points.
 * AI-2026-10: map evaluations in STEP 1 of `kam_torus()` run in parallel with OpenMP (per-thread work arrays, atomic `map_failures`); `-fopenmp` in the Makefile; the step-size statistics in `fluxvp.c` (BCN-RTBP) are updated in an OpenMP critical section.
 * `4b6c47a`: `--fdcheck` and `--orbit` modes in `main()`.
 * AI-2026-10: local coordinates ζ = (z − z_c)/s for the CR3BP torus (`to_physical()`, `zcen`, `zscale`); `map_CR3BP()` and `gform_CR3BP()` take ζ.
