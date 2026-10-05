@@ -6,6 +6,10 @@
 %% results/families/nrho_id97/*, results/families/elliptic_members_scan.txt, or
 %% figures/family_id{53,97}/id{53,97}_table.csv. Items marked TODO need input from the author.
 %% Revised 2026-10-01: Results rewritten around the NRHO Id 53 family.
+%% Revised 2026-10-05: new Sec. on the limits of the families and their breakdown
+%% (results/families/stability_edge_scan.txt, figures/breakdown/limits_*.{png,csv}); large-torus
+%% runs (Ids 51, 101, 87, Id 37 second slice) and the outward extensions added to the tables
+%% (docs/STATUS_2026-10-05.md, results/families/nrho_id*/OUTWARD_EXTENSIONS.md, git log).
 
 \documentclass[11pt]{article}
 
@@ -55,9 +59,16 @@ of member matters. Continuation in the rotation vector produces a family of 109 
 Id~53 (perilune $17.1$~km), with radii from $1.35$ to $14.7$~km on the section, median invariance
 errors of $4.5\times10^{-13}$ and $1.9\times10^{-12}$~LU on its two branches and a maximum of
 $9.9\times10^{-12}$~LU (about $2$~mm); the quasi-periodic orbits of its largest torus stay at
-least $8.9$~km above the surface. Around NRHO Id~97, numerically just as well behaved but with a
+least $8.9$~km above the surface; an extension with a relaxed tolerance floor takes it to
+$15.4$~km. Around NRHO Id~97, numerically just as well behaved but with a
 perilune of only $4.2$~km, the larger tori of a 141-torus family ($0.67$ to $9.4$~km) impact
-Enceladus.
+Enceladus. Families around six more members, some started in a different mix of the two
+elliptic modes, give the largest torus computed, $20.0$~km around NRHO Id~51. We also determine
+how large the tori can get. Orbit sweeps show that the regular region around each NRHO reaches at
+most about $16$ to $21$~km on the section. Near its edge the frequency drift of orbits crosses the
+regularity threshold, and the number of Fourier modes the tori need grows rapidly and
+anisotropically. The families therefore end close to the breakdown of the tori, not only at a
+numerical limit.
 \end{abstract}
 
 %% ============================================================================
@@ -115,7 +126,14 @@ with three frequencies (two frequencies and the return time). The contributions 
 \item A family of 109 tori around NRHO Id~53, with radii from $1.35$ to $14.7$~km and invariance
   errors of $10^{-13}$ to $10^{-11}$~LU, whose quasi-periodic orbits stay at least $8.9$~km above
   Enceladus; and, for contrast, a family of 141 tori around the lower NRHO Id~97, whose larger
-  tori impact Enceladus (\cref{sec:results}).
+  tori impact Enceladus (\cref{sec:results}). Families around Ids~23, 37 and 85, and large-torus
+  runs around Ids~51, 87 and 101 with start tori in other mode mixes, the largest torus being
+  $20.0$~km around Id~51 (\cref{sec:summary}).
+\item An analysis of the limits of the families (\cref{sec:limits}): the extent of the regular
+  region around each elliptic NRHO, measured by orbit sweeps, and two signatures of the approach
+  to breakdown of the tori near its edge, the frequency drift of orbits and the growth of the
+  Fourier modes the tori need. Tori whose quasi-periodic orbits intersect the surface are kept and
+  marked, since the point-mass model does not see Enceladus.
 \end{itemize}
 \todo{Check whether QPOs around Saturn--Enceladus NRHOs have been computed before, and adjust
 the wording of the contribution list accordingly.}
@@ -300,7 +318,14 @@ per loop. This is step 5 of \cite[Alg.~3.6.1, p.~30]{haromondelo2021flow}: ``if
 $\mathrm{err}(T')>\varepsilon_1$, double $N$''. We refine only if the best error is within a
 factor $100$ of $\epsilon_{\mathrm{floor}}$; stalls farther above it, which occur when a
 continuation predictor has left the basin of convergence, are handled by halving the
-continuation step instead. The largest grid is $128\times128$.
+continuation step instead. The original branches of the main families were computed with refinement in both directions and
+a largest grid of $128\times128$. For the larger tori we refine anisotropically
+(\cref{sec:limits-response}): we measure, per angle, the fraction of the error spectrum in the band
+$3n_j/16\le|k_j|<n_j/4$ just below the filter cutoff, and double only the angle(s) in which the best
+torus has at least $20\%$ of its error spectrum there; otherwise the step is rejected and halved.
+After an accepted torus whose error exceeds $0.3\,\epsilon_{\mathrm{floor}}$ we refine in the same
+way before the next step (proactive refinement). The grid cap is then $262144$ points (e.g.\
+$512\times512$).
 
 \paragraph{Continuation.} We continue tori at fixed energy in the rotation vector
 \cite[Sec.~3.5, Alg.~3.5.4]{haromondelo2021flow}, along a straight line
@@ -314,7 +339,8 @@ reaches a prescribed limit. Since Lagrangian tori of a 4D map at fixed energy fo
 
 \subsection{Initial guesses}\label{sec:guess}
 Initial tori come from orbits of $F$. We start at $z^* + a_1\mathrm{Re}\,V_1 + a_2\mathrm{Re}\,V_2$,
-where $V_j$ are the elliptic eigenvectors of $DF(z^*)$, iterate the map, and compute the rotation
+where $V_j$ are the elliptic eigenvectors of $DF(z^*)$ and $(a_1,a_2) = a\,(c_1,c_2)$ with a
+\emph{mode mix} $(c_1,c_2)$, $(1,1)$ for the main families, iterate the map, and compute the rotation
 numbers of the orbit from its complex eigen-coordinates: a linear fit of the unwrapped angle,
 refined by maximizing the Hann-windowed Fourier amplitude as in Laskar's NAFF
 \cite{laskar1990chaotic,laskar1993naff}. We then fit the Fourier coefficients of $K$ to the orbit
@@ -498,7 +524,7 @@ six consecutive runs, three per direction, each restarting from the last torus o
   below its minimum, with errors of about $10^{-11}$;
 \item outward: cumulative $\varepsilon$ from $0$ to $3.486$, 46 tori, radius from $5.7$ up to
   $14.7$~km, with automatic refinement from $32\times32$ to $64\times64$ and $128\times128$. The last
-  run stopped at errors of about $10^{-11}$ on $128\times128$ (\cref{sec:limitations}).
+  run stopped at errors of about $10^{-11}$ on $128\times128$ (\cref{sec:limits}).
 \end{itemize}
 Of the 114 tori, 35 are on $32\times32$ grids, 14 on $64\times64$ and 65 on $128\times128$; 109 are
 distinct, the others being the start torus and the tori at which runs were joined. They cover
@@ -507,7 +533,12 @@ $\rho_2\in[0.15221, 0.15410]$ (\cref{fig:freq}) and radii of $1.35$ to $14.7$~km
 inward branch and $1.9\times10^{-12}$~LU on the outward branch, and maximum $9.9\times10^{-12}$~LU,
 about $2.4$~mm (\cref{fig:error}). As for Id~97 (\cref{sec:id97}), the radius grows like
 $\sqrt{\rho_2-\rho^{\mathrm{lin}}_2}$ near the NRHO (\cref{fig:size}), and the error is smallest on
-the middle part of the family and rises towards both ends.
+the middle part of the family and rises towards both ends. Three later restarts of the outward
+branch from its last torus, with anisotropic refinement and then with a tolerance floor of
+$10^{-10}$~LU (about $2.4$~cm), added 35 tori and took the largest radius from $14.74$ to
+$15.37$~km, on grids up to $256\times256$; their errors are at most $7.6\times10^{-11}$~LU. Why the
+gain is so small is the subject of \cref{sec:limits}. Unless stated otherwise, the figures and
+numbers of this section refer to the 109 tori computed with the $10^{-11}$~LU floor.
 
 \begin{figure}[t]
 \centering
@@ -626,38 +657,68 @@ QPOs that dip below the mean surface of Enceladus.}
 \end{figure}
 
 \subsection{Summary over NRHO members}\label{sec:summary}
-\Cref{tab:families} collects the families. The perilune altitude of the NRHO bounds the size of
-useful tori: around Id~53 the QPOs of a $14.7$~km torus stay $8.9$~km above the surface, while
-around Id~97 those of a $9.4$~km torus reach $0.2$~km below it.
+\Cref{tab:families} collects the families. The upper block lists the five main families, started
+with the mode mix $(1,1)$ and continued in both directions with $\epsilon_{\mathrm{floor}} =
+10^{-11}$~LU. Ids 23, 37 and 85 were set up with the same pipeline (start tori of amplitude
+$4\times10^{-5}$~LU); their inward branches stopped earlier (Id~23 at a radius of $2.72$~km, Id~37
+at $4.11$~km) when the continuation step fell below its minimum. Outward, every main branch first
+ended near $10^{-11}$~LU on $128\times128$ grids, between $9.6$ and $14.7$~km. Restarts of the
+outward branches of Ids 23, 37, 53 and 85 with anisotropic refinement and a relaxed floor of
+$10^{-10}$~LU gained little: Id~23 $9.61\to9.66$~km, Id~37 $12.28\to12.4$~km, Id~53
+$14.74\to15.37$~km, Id~85 $12.27\to12.35$~km, with accepted errors of at most $2.3\times10^{-11}$,
+$9.8\times10^{-11}$, $7.6\times10^{-11}$ and $9.6\times10^{-11}$~LU, respectively.
+\Cref{sec:limits} explains why.
+
+The lower block lists large-torus runs. They are outward only, accepted with
+$\epsilon_{\mathrm{floor}} = 10^{-10}$~LU (about $2.4$~cm, ten times the floor of the main families),
+and around members chosen, with their start mode mix, where the regular region extends farthest
+(\cref{sec:limits-extent}). Around NRHO Id~51 (perilune $17.6$~km), with the mix $(0.3,1)$, 27 tori
+reach a radius of $20.0$~km, the largest torus we have computed; its QPOs stay at least $7.6$~km
+above the surface. Around Id~87 (mix $(0.3,1)$) the $13.25$~km torus clears the surface by only
+$0.8$~km, and around Id~101 (perilune $3.1$~km, mix $(1,1)$) the QPOs of the largest tori intersect
+Enceladus. A second slice of the Id~37 family, with the mix $(0.3,1)$, stopped early at $7.31$~km
+(steps rejected on a $32\times32$ grid at the tolerance).
+
+The model treats Enceladus as a point mass and does not see its surface, so tori whose QPOs pass
+below the mean radius are still invariant tori of the model. We keep them in the table and mark
+them by a negative minimum altitude (Ids~97 and 101). Across the members the useful size of the
+tori is set by the perilune altitude: Id~85 ($7.8$~km perilune) keeps a $12.3$~km torus $3.6$~km
+above the surface, Id~23 a $9.6$~km torus $21.0$~km above it, while around Id~97 a $9.4$~km torus and
+around Id~101 a $14.0$~km torus reach $0.2$ and $3.4$~km below it.
 
 \begin{table}[t]
 \centering
-\caption{Families of Lagrangian tori around five NRHO members. Errors are sup-norm invariance
-errors \eqref{eq:err} in LU (median inward / outward; maximum). Tori: distinct converged tori. Minimum QPO altitude: over 30
-revolutions from the largest torus, above the $252.1$~km mean radius.}
+\caption{Families of Lagrangian tori around eight NRHO members. Errors are sup-norm invariance
+errors \eqref{eq:err} in LU (median inward / outward, or outward only; maximum). Tori: distinct
+converged tori. Radius: on the section, in $(q_1,q_2)$. Minimum QPO altitude: over 30 revolutions
+from the largest torus, above the $252.1$~km mean radius. \emph{QPOs that intersect the surface are
+included}, marked by a negative minimum altitude and $\dagger$; the point-mass model does not see
+the surface. Upper block: start mode mix $(1,1)$, $\epsilon_{\mathrm{floor}}=10^{-11}$~LU; radii
+include the outward extensions with $\epsilon_{\mathrm{floor}}=10^{-10}$~LU (Id~53: $+35$ tori),
+whose errors are not in the error column (see text); $^{a}$minimum altitude of the largest torus
+before the extension (radius $9.61$, $12.28$, $14.7$ and $12.27$~km). Lower block: large-torus runs,
+outward only, $\epsilon_{\mathrm{floor}}=10^{-10}$~LU ($\approx2.4$~cm), start mode mix as listed.}
 \label{tab:families}
 \small
-\setlength{\tabcolsep}{4pt}
+\setlength{\tabcolsep}{3.5pt}
 \begin{tabular}{rcccccc}
 \toprule
-Id & perilune & $\rho^{\mathrm{lin}}$ & tori & radius & median / max error & min.\ QPO \\
+Id (mix) & perilune & $\rho^{\mathrm{lin}}$ & tori & radius & median / max error & min.\ QPO \\
    & alt.\ (km) &                     &      & (km)   & (LU)               & alt.\ (km) \\
 \midrule
-23 & 25.8 & $(0.336377, 0.101653)$ & 74 & 2.72--9.61 & $6.9\mathrm{e}{-13}$ / $4.5\mathrm{e}{-12}$; $1.0\mathrm{e}{-11}$ & 21.0 \\
-37 & 21.8 & $(0.337056, 0.128252)$ & 55 & 4.11--12.3 & $7.4\mathrm{e}{-13}$ / $1.2\mathrm{e}{-12}$; $1.0\mathrm{e}{-11}$ & 15.6 \\
-53 & 17.1 & $(0.339096, 0.152183)$ & 109 & 1.35--14.7 & $4.5\mathrm{e}{-13}$ / $1.9\mathrm{e}{-12}$; $9.9\mathrm{e}{-12}$ & 8.9 \\
-85 &  7.8 & $(0.348321, 0.185508)$ & 75 & 1.04--12.3 & $3.6\mathrm{e}{-13}$ / $2.1\mathrm{e}{-12}$; $1.0\mathrm{e}{-11}$ & 3.6 \\
-97 &  4.2 & $(0.353958, 0.194304)$ & 141 & 0.67--9.4 & $3.8\mathrm{e}{-13}$ / $6.1\mathrm{e}{-13}$; $1.0\mathrm{e}{-11}$ & $-0.2$ \\
+23 & 25.8 & $(0.336377, 0.101653)$ & 74 & 2.72--9.66 & $6.9\mathrm{e}{-13}$ / $4.5\mathrm{e}{-12}$; $1.0\mathrm{e}{-11}$ & $+21.0^{a}$ \\
+37 & 21.8 & $(0.337056, 0.128252)$ & 55 & 4.11--12.4 & $7.4\mathrm{e}{-13}$ / $1.2\mathrm{e}{-12}$; $1.0\mathrm{e}{-11}$ & $+15.6^{a}$ \\
+53 & 17.1 & $(0.339096, 0.152183)$ & 109 & 1.35--15.37 & $4.5\mathrm{e}{-13}$ / $1.9\mathrm{e}{-12}$; $9.9\mathrm{e}{-12}$ & $+8.9^{a}$ \\
+85 &  7.8 & $(0.348321, 0.185508)$ & 75 & 1.04--12.35 & $3.6\mathrm{e}{-13}$ / $2.1\mathrm{e}{-12}$; $1.0\mathrm{e}{-11}$ & $+3.6^{a}$ \\
+97 &  4.2 & $(0.353958, 0.194304)$ & 141 & 0.67--9.4 & $3.8\mathrm{e}{-13}$ / $6.1\mathrm{e}{-13}$; $1.0\mathrm{e}{-11}$ & $-0.2^{\dagger}$ \\
+\midrule
+51 $(0.3,1)$ & 17.6 & $(0.338768, 0.149597)$ & 27 & 3.59--20.01 & $6.4\mathrm{e}{-13}$; $9.9\mathrm{e}{-11}$ & $+7.6$ \\
+87 $(0.3,1)$ &  7.2 & $(0.349137, 0.187041)$ & 27 & 3.48--13.25 & $1.8\mathrm{e}{-12}$; $1.0\mathrm{e}{-10}$ & $+0.8$ \\
+101 $(1,1)$  &  3.1 & $(0.356035, 0.196740)$ & 27 & 5.30--14.01 & $2.7\mathrm{e}{-12}$; $9.5\mathrm{e}{-11}$ & $-3.4^{\dagger}$ \\
+37 $(0.3,1)$ & 21.8 & $(0.337056, 0.128252)$ & 22 & up to 7.31 & --- & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
-Ids 23, 37 and 85 were set up with the same pipeline (start tori of amplitude $4\times10^{-5}$~LU,
-continuation in both directions); their inward branches stopped earlier (Id~23 at a radius of
-$2.72$~km, Id~37 at $4.11$~km) when the continuation step fell below its minimum. Every family
-ends outward at the numerical edge described in \cref{sec:limitations}, between $9.6$ and
-$14.7$~km. Across the five members the useful size of the tori is set by the perilune altitude:
-Id~85 ($7.8$~km perilune) keeps a $12.3$~km torus $3.6$~km above the surface, Id~23 a $9.6$~km
-torus $21.0$~km above it.
 
 \subsection{Cost}
 Each Newton step evaluates the section map and its differential at every grid point, i.e.\ $N$
@@ -675,6 +736,160 @@ minutes. \todo{Machine and CPU model; timing per step on $128\times128$.}
 For comparison, the dense collocation Newton step costs $O((4N)^3)$ operations and storage
 $O((4N)^2)$.
 
+
+%% ============================================================================
+\section{Limits of the torus families and their breakdown}\label{sec:limits}
+Every outward branch of \cref{tab:families} ended on a small continuation step, and restarting it
+with finer or anisotropic grids and a looser tolerance floor moved its end by at most
+$0.6$~km. This section shows that the families end close to the edge of the regular region
+around their NRHO, where the tori approach breakdown, and that for low-perilune members the
+surface of Enceladus comes first. We measure the regular region directly with orbits of $F$
+(\cref{sec:limits-extent}), describe two signatures of the approach to breakdown
+(\cref{sec:limits-drift,sec:limits-modes}), and explain how the solver responds to them
+(\cref{sec:limits-response}), why the direction of continuation matters
+(\cref{sec:limits-direction}), and where the physical edge lies (\cref{sec:limits-surface}).
+
+\subsection{How large can the tori get?}\label{sec:limits-extent}
+For each of the 29 elliptic members with perilune above the surface we grow orbits of $F$ from the
+fixed point along three mode mixes, $z^* + a\,(c_1\mathrm{Re}\,V_1 + c_2\mathrm{Re}\,V_2)$ with
+$(c_1,c_2) = (1,1)$, $(1,0.3)$ and $(0.3,1)$ and increasing amplitude $a$ (successive amplitudes
+differ by a factor of about $1.15$). An orbit is called regular if the NAFF rotation numbers of
+the two halves of $4096$ iterates agree to $10^{-7}$ (\cref{sec:guess}). For each mix we record the
+largest regular amplitude and the maximum distance of that orbit from the NRHO on the section, the
+\emph{extent} of the regular region in that direction (\cref{fig:extent}). The extent reaches at
+most about $16$ to $21$~km: Id~101 $21.4$~km along $(1,1)$, Id~87 $17.9$~km, Id~97 $17.6$~km,
+Id~37 $16.7$~km and Id~51 $16.3$~km along $(0.3,1)$, and Id~53 $15.9$~km along $(1,1)$. It varies
+strongly between members and between mixes. Around Id~51 it is $16.3$~km along $(0.3,1)$ but
+$8.9$~km along $(1,1)$ and $4.4$~km along $(1,0.3)$; around Ids~59 and 71, which lie close to
+low-order resonances (\cref{tab:scan}), no orbit of the sweep is regular in some directions. It
+does not follow the perilune altitude.
+
+The extent is an estimate. It is resolved only to the amplitude step and in three directions, and
+it measures the distance of an orbit from the NRHO rather than the radius of a torus about its own
+centre. The largest torus around Id~51 ($20.0$~km) is in fact larger than the extent found along
+$(0.3,1)$, and the finer sweep of \cref{fig:drift} finds regular orbits up to $19.2$~km in that
+direction. Still, the largest computed tori of the main families lie close to the extent around
+their NRHO (Id~53: $15.37$ against $15.9$~km; Id~85: $12.35$ against $13.2$~km), and tori larger than
+about $20$~km are not to be expected around these NRHOs.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{limits_extent.png}
+\caption{Extent of the regular region around each elliptic NRHO with perilune above the surface:
+the maximum distance from the NRHO, on the section, of the largest regular orbit of the sweep along
+each of three mode mixes, against the perilune altitude. Diamonds: radius of the largest computed
+torus of each member. Source: \nolinkurl{results/families/stability_edge_scan.txt}.}
+\label{fig:extent}
+\end{figure}
+
+\subsection{First signature: loss of regularity}\label{sec:limits-drift}
+\Cref{fig:drift} shows the frequency drift between the two orbit halves along finer sweeps for
+Id~53 (mix $(1,1)$) and Id~51 (mix $(0.3,1)$). Up to about $12$~km from the NRHO the drift stays
+between $10^{-11}$ and a few $10^{-9}$. It then rises, with isolated excursions (Id~51:
+$1.1\times10^{-7}$ at $12.8$~km, back to $3\times10^{-10}$ at $16.6$~km), and crosses the regularity
+threshold $10^{-7}$ for good near $20$~km: Id~53 has a drift of $3.3\times10^{-7}$ at $21.2$~km and
+$2.4\times10^{-4}$ at $31.0$~km, Id~51 $2.4\times10^{-3}$ at $22.5$~km. Beyond about $22$~km (Id~51)
+and $31$~km (Id~53) the orbits escape Enceladus: the next amplitudes of the sweeps reach distances
+of about $4.8$ to $5.0\times10^{5}$~km (e.g.\ $486{,}700$~km for Id~53).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{limits_drift.png}
+\caption{Frequency drift between the two halves of orbits of $4096$ iterates, against the maximum
+distance of the orbit from the NRHO on the section, for sweeps around NRHO Id~53 (mix $(1,1)$) and
+Id~51 (mix $(0.3,1)$). Dotted: the regularity threshold $10^{-7}$. Dashed: beyond these distances
+the orbits escape Enceladus.}
+\label{fig:drift}
+\end{figure}
+
+\subsection{Second signature: growth of the Fourier content}\label{sec:limits-modes}
+\Cref{fig:modes} shows, for every torus of the Id~53 and Id~51 families, the highest Fourier mode
+$|k_j|$ in each angle with a coefficient above $10^{-11}$~LU, the accuracy of the solve. Up to a
+radius of about $12$~km the tori need only a few modes, mostly $4$ to $10$ (at most $14$). Then the
+number grows rapidly and anisotropically: around Id~53 to about $60$ by $15$~km, and around Id~51
+to $127$ in $\theta_2$ and $63$ in $\theta_1$ at $20.0$~km, on a $256\times512$ grid, i.e.\ up to the
+filter cutoff $n_j/4$ in both angles. Along the Id~51 family the grid grows accordingly, from
+$32\times32$ through $32\times128$, $64\times256$ and $128\times256$ to $256\times512$. A torus
+approaching breakdown loses smoothness: its Fourier coefficients decay ever more slowly, and the
+number of modes needed for a given accuracy grows without bound. The growth in
+\cref{fig:modes} is this approach to breakdown of the KAM tori, seen in the same members and at the
+same distances as the loss of regularity of \cref{fig:drift}; it is not only a numerical limit of
+the solver. The spike at radii near $1.4$~km is not part of this picture: the innermost Id~53 tori
+were accepted close to the tolerance floor, and their coefficients carry noise at the $10^{-11}$
+level, which the count picks up.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{limits_modes.png}
+\caption{Highest Fourier mode $|k_j|$ with a coefficient above $10^{-11}$~LU, per angle, against
+the torus radius, for the Id~53 (mix $(1,1)$) and Id~51 (mix $(0.3,1)$) families. The spike near
+$1.4$~km comes from the innermost Id~53 tori, accepted near the tolerance floor, which carry noise
+at that level.}
+\label{fig:modes}
+\end{figure}
+
+\subsection{How the computation responds}\label{sec:limits-response}
+The growth of the Fourier content is what stopped the original outward branches. All of them ended
+near $10^{-11}$~LU on $128\times128$ grids. The error spectrum of the last Id~53 outward torus
+(radius $14.7$~km) is concentrated at $k=(-31,6\ldots8)$, i.e.\ at $|k_1| = 31$, just below the
+filter cutoff $n_1/4 = 32$ in $\theta_1$, and is at about $10^{-15}$ elsewhere. This is truncation in
+$\theta_1$ alone, not noise of the map: a relative threshold on the right-hand sides of the
+cohomological equations, varied from $10^{-10}$ to $10^{-4}$, had no effect at all. Refining both
+angles, as in \cref{sec:practical}, quadruples the cost and soon reaches the grid cap; the
+truncated angle is what needs refining. We therefore refine anisotropically: the solver measures,
+per angle, the fraction of the error spectrum in the band $3n_j/16\le|k_j|<n_j/4$ and doubles only
+the angle(s) in which that fraction is at least $20\%$. For the edge torus of Id~53 ($128\times128$,
+$9.92\times10^{-12}$~LU) the fractions are $60\%$ ($\theta_1$) and $13\%$ ($\theta_2$). Refined to
+$256\times128$ its error goes $9.93\times10^{-12}$, $4.62\times10^{-12}$, $3.20\times10^{-12}$, while
+on $128\times128$ the step made it worse ($2.5\times10^{-11}$).
+
+Two refinements of this rule turned out to be necessary once the floor was relaxed to
+$10^{-10}$~LU and the grid cap raised to $262144$ points. First, refinement must require that the
+\emph{best} torus is truncated: otherwise steps whose predictor had left the basin were refined
+instead of halved (Id~37 was refined to $128\times2048$ with $0.003\%$ of its error near the cutoff,
+Id~85 to $512\times512$ from an iterate at $1.5\times10^{-8}$). Second, a branch whose tori are
+accepted just below the floor on a grid that truncates them never stalls, so refinement on stall
+never triggers, while the step shrinks indefinitely; Id~87 sat on a $32\times64$ grid with accepted
+errors of $1.0\times10^{-10}$ and 25 step halvings. After an accepted torus whose error exceeds
+$0.3\,\epsilon_{\mathrm{floor}}$ the grid is now refined before the next step (proactive refinement).
+
+With these changes the extensions of the main families still gained little: Id~53 went from
+$14.74$ to $15.37$~km, and Ids~23, 37 and 85 by about $0.1$~km or less (\cref{sec:summary}), even
+though, with the corrected rule, the last tori of Ids~23 and 85 genuinely required $512\times512$
+grids (their best tori had most of their error spectrum just below the cutoff). This is
+what \cref{fig:extent,fig:drift,fig:modes} predict: the families had already reached the edge of the
+regular region, where each further kilometre costs a large increase in the number of modes. The
+remaining progress of a branch is limited by breakdown, not by the accuracy of the map.
+
+\subsection{Direction in the two-parameter family}\label{sec:limits-direction}
+Lagrangian tori of a 4D map at fixed energy form a two-parameter family, and continuation along a
+line in $\omega$ follows one path through it (\cref{sec:practical}). The path is set by the start
+torus, i.e.\ by the mode mix of the orbit it is fitted to, and the regular region is far from
+round (\cref{sec:limits-extent}). Starting in the mix in which the region extends farthest pays
+off: around Id~51, whose extent along $(1,1)$ is only $8.9$~km, the start torus with the mix
+$(0.3,1)$ leads to a family that reaches $20.0$~km, the largest torus computed, against $15.4$~km
+for Id~53 along $(1,1)$. \Cref{fig:apo51} shows the QPOs of three Id~51 tori at apolune: the tube of
+the $20.0$~km torus spans about $25\times10$~km there.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{id51_apolune.png}
+\caption{Crossings of the plane $y=0$ near apolune over 300 revolutions, relative to the crossing of
+NRHO Id~51, for three tori of the Id~51 family with mix $(0.3,1)$ (radius $3.6$, $7.9$ and
+$20.0$~km on the section).}
+\label{fig:apo51}
+\end{figure}
+
+\subsection{Physical edge: intersection with the surface}\label{sec:limits-surface}
+The CR3BP treats Enceladus as a point mass, so the model does not see its surface: a torus whose
+QPOs pass below the mean radius is still an invariant torus of the model, but not a usable orbit.
+We keep such tori and mark them (\cref{tab:families}). Over 30 revolutions from the largest torus
+of each run, the minimum altitude above the $252.1$~km mean radius is $-0.2$~km for Id~97 (torus
+radius $9.4$~km), $-3.4$~km for Id~101 ($14.0$~km), $+0.8$~km for Id~87 ($13.25$~km) and
+$+7.6$~km for Id~51 ($20.0$~km). For the low-perilune members the surface therefore ends the useful
+part of the family well inside the regular region: Id~101 has the largest extent of all members,
+$21.4$~km, but its QPOs reach $3.4$~km below the surface already at $14.0$~km. For the higher
+members, such as Ids~51 and 53, the regular region ends first.
 
 %% ============================================================================
 \section{Discussion}\label{sec:discussion}
@@ -739,21 +954,24 @@ diagnostics above are a cheap way to detect them.
   tolerance or the section tolerance beyond that. The exact source of the remaining floor in the
   map evaluation is not yet characterized. \todo{Characterize the floor (e.g., by comparing with an
   extended-precision or Taylor integrator).}
-\item \emph{Numerical edge of the Id~53 family.} The outer end of the Id~53 family near $14.7$~km
-  is numerical, not dynamical. There the attainable error rises to about $10^{-11}$~LU on
-  $128\times128$ grids, the tolerance floor, and a run with a floor three times larger
-  ($3\times10^{-11}$~LU) advanced only $\Delta\varepsilon\approx0.006$. The floor grows with the
-  grid size, because finer grids have more small divisors that amplify the map noise, so grid
-  refinement cannot push past it: this is a limit of the section-map formulation at these sizes.
-  More accurate map evaluation (e.g.\ higher-order or extended-precision integration), or the
-  flow-map/multiple-shooting formulation of Haro and Mondelo \cite{haromondelo2021flow}, which
-  shortens the integration intervals, are the candidates to extend the family.
-\item \emph{Physical edge: impact.} For low-perilune members the family ends physically before
-  it ends numerically. Around NRHO Id~97 (perilune $4.2$~km) tori larger than about $9$~km have
-  QPOs that pass below the mean surface of Enceladus, and members with Id~$\ge113$ have
-  perilunes below it. The scan of \cref{sec:scan} is therefore part of the method for this
-  problem: perilune altitude, as well as resonance distance, decides which members are worth
-  continuing. Altitudes here are measured from the $252.1$~km mean radius.
+\item \emph{Outer edge of the families.} The outer end of the Id~53 family is not a limit of
+  the map accuracy, as we first thought, but close to the edge of the regular region around the
+  NRHO (\cref{sec:limits}). The error at the end of the original branch was truncation in one
+  angle; anisotropic refinement removes it, but the number of Fourier modes the tori need grows
+  rapidly toward the edge, so each further kilometre is expensive and the extensions gained only
+  $0.6$~km. Beyond the edge, orbits become chaotic or escape. Tori larger than about $20$~km are
+  not expected around the members we scanned; reaching the last regular tori would need very
+  large grids or a method adapted to the approach to breakdown. The more accurate map evaluation or
+  the flow-map/multiple-shooting formulation of Haro and Mondelo \cite{haromondelo2021flow} can
+  lower the error floor, but not move the edge of the regular region.
+\item \emph{Physical edge: surface intersection.} For low-perilune members the family ends
+  physically before it ends dynamically. Around NRHOs Id~97 (perilune $4.2$~km) and Id~101 ($3.1$~km)
+  the QPOs of the larger tori pass below the mean surface of Enceladus, and members with
+  Id~$\ge113$ have perilunes below it. Since the point-mass model does not see the surface, we keep
+  these tori and mark them (\cref{tab:families,sec:limits-surface}). The scan of \cref{sec:scan} is
+  therefore part of the method for this problem: perilune altitude, as well as resonance distance
+  and the extent of the regular region, decides which members are worth continuing. Altitudes here
+  are measured from the $252.1$~km mean radius.
 \item \emph{Resonances.} The line in $\omega$ crosses resonances densely; numerically only
   low-order ones with small divisors on the grid matter. Near the $1{:}2$ resonance (NRHO Id~72)
   the method is not applicable to the resonant tori, which are not Lagrangian KAM tori with the
@@ -767,6 +985,11 @@ diagnostics above are a cheap way to detect them.
   integration intervals, which may help near the close passage of the NRHO over Enceladus. A flow-map version of this framework
   \cite{haromondelo2021flow,fernandezmora2024siads,fernandezmora2026convergence} is a natural next
   step.
+\item \emph{Tolerance of the large-torus runs.} The large-torus runs and the extensions of the
+  main families were accepted with $\epsilon_{\mathrm{floor}} = 10^{-10}$~LU (about $2.4$~cm), ten
+  times the floor of the main families; their median errors are still between $6.4\times10^{-13}$ and $2.7\times10^{-12}$~LU.
+  The Id~37 slice with the mix $(0.3,1)$ stopped at $7.31$~km, well short of the $16.7$~km extent
+  in that direction, and could be restarted.
 \item \emph{Extent of the Id~97 family.} The inward branch stopped at $2\%$ of the original
   detuning on $32\times32$, before automatic refinement existed, and the outward branch stopped at
   its prescribed limit $\varepsilon = 2.60$ (radius $9.4$~km), which is already beyond the impact
@@ -792,18 +1015,29 @@ members must be selected by perilune altitude as well as by distance to low-orde
 Continuation in the rotation vector produced a family of 109 tori around NRHO Id~53 (perilune
 $17.1$~km), with radii from $1.35$ to $14.7$~km on the section, median errors of
 $4.5\times10^{-13}$ and $1.9\times10^{-12}$~LU and a maximum of $9.9\times10^{-12}$~LU; its QPOs
-stay at least $8.9$~km above Enceladus. Its outer edge is numerical, set by the map-noise floor on
-$128\times128$ grids. Around NRHO Id~97 (perilune $4.2$~km) a family of 141 tori, from $0.67$ to
-$9.4$~km, is equally accurate, but its tori larger than about $9$~km impact Enceladus. Next steps
-are the families around NRHOs Id~23, 37 and 85, more accurate map evaluation or a flow-map
-formulation with multiple shooting to extend the families, the stability of the tori, and their
-use in mission design for an Enceladus orbiter.
+stay at least $8.9$~km above Enceladus, and an extension with a floor of $10^{-10}$~LU reaches
+$15.37$~km. Around NRHO Id~97 (perilune $4.2$~km) a family of 141 tori, from $0.67$ to
+$9.4$~km, is equally accurate, but its tori larger than about $9$~km impact Enceladus. Families
+around Ids~23, 37 and 85, and large-torus runs around Ids~51, 87 and 101, complete the picture; with
+a start torus in the mode mix $(0.3,1)$ the Id~51 family reaches $20.0$~km, the largest torus
+computed, with QPOs at least $7.6$~km above the surface.
+
+The families end close to the edge of the regular region around their NRHO, which orbit sweeps
+place at most about $16$ to $21$~km from the NRHO on the section, with strong variation between
+members and directions. Near that edge the frequency drift of orbits crosses the regularity
+threshold and the Fourier content of the tori grows rapidly and anisotropically, the approach to
+breakdown of the tori. Anisotropic and proactive grid refinement follow this growth, but gain
+little: the outer edge is dynamical rather than numerical. For low-perilune members the surface of
+Enceladus comes first, and we keep and mark the tori whose QPOs intersect it. Next steps are the
+stability of the tori, the Id~37 slice and the Id~101 family toward their regular extents, and the
+use of the tori in mission design for an Enceladus orbiter.
 
 \paragraph{Code and data availability.} \todo{Repository URL (github.com/jared711/nrho-lagrangian-tori?),
 license (the RTBP library is LGPL v3 or later), and the commit used for the results; the tori,
-run logs and commands are in \nolinkurl{results/families/nrho_id53/} and
-\nolinkurl{results/families/nrho_id97/}, and the member scan in
-\nolinkurl{results/families/elliptic_members_scan.txt}.}
+run logs and commands are in \nolinkurl{results/families/nrho_id<Id>/} (large-torus runs in
+\nolinkurl{mix_*} subdirectories), the member scan in
+\nolinkurl{results/families/elliptic_members_scan.txt}, and the regular-region scan in
+\nolinkurl{results/families/stability_edge_scan.txt}.}
 
 \section*{Acknowledgments}
 The author thanks \`Alex Haro (Universitat de Barcelona) and Josep-Maria Mondelo (Universitat
