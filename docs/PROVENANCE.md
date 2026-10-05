@@ -81,4 +81,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 
 ## Documentation
 
-* `docs/paper/`, `docs/analysis/`, `docs/STATUS.md`, `docs/JULIA_IMPLEMENTATION_STATUS.md`, and the untracked `docs/REORGANIZATION_COMPLETE.md` and `docs/VERIFICATION_TESTS.md`: AI-2026-08. `docs/paper/references.bib` contains fabricated and incorrect entries (checked 2026-10-01) and must be rebuilt before use.
+* `docs/hist/2026-08_session/`: notes of the AI-2026-08 sessions (moved there 2026-10-05; their central bug diagnosis was wrong).
+* `docs/hist/WORKLOG_2026-10.md`: AI-2026-10 running log.
+* `docs/STATUS_2026-10-05.md`, `README.md`, `src/julia/README.md`, `docs/paper/README.md`: AI-2026-10, current.
+* `docs/paper/paper.tex`: rewritten from scratch in AI-2026-10 (`742d785` and later); the AI-2026-08 draft is in git history. `docs/paper/references.bib`: rebuilt with verified entries (`19a368f`).
