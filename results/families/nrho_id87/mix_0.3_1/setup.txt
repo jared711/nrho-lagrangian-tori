@@ -1,0 +1,7 @@
+Id 87  H = -1.50001744307923  mu = 1.9011097358926e-07  T = 2.22367052456349
+rho_lin = 0.34913729916076303 0.18704058670781201
+rho = 0.34885110747493719 0.18703503587005949
+domega = -2.861917e-04 -5.550838e-06
+amplitude = 4e-05  mode weights = (0.30, 1.00)
+inward:  param start.csv --domega -2.861917e-04 -5.550838e-06 --eps-max -0.95 --max-steps 3000 --tol-floor 1e-11  (step -0.01)
+outward: param start.csv --domega -2.861917e-04 -5.550838e-06 --eps-max 100 --max-steps 3000 --tol-floor 1e-11  (step +0.01)
