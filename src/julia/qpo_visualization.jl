@@ -84,8 +84,9 @@ function main(args)
         # distance to the NRHO: nearest point of the (densely sampled) periodic orbit
         d = [minimum(sum((Rn .- Rq[k:k, :]) .^ 2, dims=2))^0.5 for k in 1:size(Rq, 1)]
         push!(qpos, (file=f, radius=radius, t=tq ./ Tnrho, R=Rq, d=d))
-        @printf("%s: section radius %.2f km, distance to NRHO %.2f .. %.2f km over %.0f revolutions\n",
-                basename(f), radius, minimum(d), maximum(d), nrevs)
+        alt = minimum(sqrt.(sum(Rq .^ 2, dims=2))) - R_ENCELADUS_KM   # positions are Enceladus-centred
+        @printf("%s: section radius %.2f km, distance to NRHO %.2f .. %.2f km, minimum altitude %+.2f km over %.0f revolutions\n",
+                basename(f), radius, minimum(d), maximum(d), alt, nrevs)
     end
     sort!(qpos, by=q -> q.radius)
 

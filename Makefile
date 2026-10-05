@@ -8,6 +8,9 @@ BUILD_DIR = build
 BIN_DIR = bin
 
 # Compiler flags
+# Compilers (OpenMP needed); override on the command line, e.g. make CC=gcc-14 CXX=g++-14 (macOS: Homebrew GCC)
+CC = gcc
+CXX = g++
 OPT = -O2 -g -Wall
 #OPT = -O3 -Wall
 # Use -iquote for local headers (searched for #include "...")
@@ -56,14 +59,14 @@ all: $(TARGET)
 
 # Link executable
 $(TARGET): $(CXX_SOURCES) $(OBJECTS) | $(BIN_DIR)
-	g++ -o $@ $(CXXFLAGS) $(CXX_SOURCES) $(OBJECTS) -lm
+	$(CXX) -o $@ $(CXXFLAGS) $(CXX_SOURCES) $(OBJECTS) -lm
 	@echo ""
 	@echo "Build complete: $(TARGET)"
 	@echo "Run with: ./$(TARGET) data/initial_conditions/approxQPO.csv"
 
 # Compile C source files to object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
-	gcc -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) $< -o $@
 
 # Create directories if they don't exist
 $(BUILD_DIR):
