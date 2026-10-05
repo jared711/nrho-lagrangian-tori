@@ -1,3 +1,7 @@
+# NOTE (2026-10): superseded for torus computations by src/julia/family_pipeline.jl, which finds the
+# fixed point on the section, measures the rotation numbers of a real orbit (NAFF) and fits the start
+# torus to it. This script builds a linear (eigenvector) torus with the linear rotation numbers.
+
 using ThreeBodyProblem
 using OrdinaryDiffEq
 using Plots
@@ -70,8 +74,9 @@ eig_idx2 = 6
 
 ρ₁ = atan(imag(λ[eig_idx1]),real(λ[eig_idx1])) # Angle of the first eigenvector
 ρ₂ = atan(imag(λ[eig_idx2]),real(λ[eig_idx2])) # Angle of the second eigenvector
-ω₁ = ρ₁/T₀
-ω₂ = ρ₂/T₀
+# bin/param needs rotation numbers per return to the section (cycles), not rad per time unit
+ω₁ = ρ₁/(2π)
+ω₂ = ρ₂/(2π)
 
 θ = 2π*(0:N-1)/N # Angles for the invariant circle
 α = 1e-5 # parameter to control the size of the invariant circle
@@ -121,8 +126,8 @@ udf = DataFrame(u[:,[1,2,4,5]],["q₁","q₂","p₁","p₂"]) # Display the inva
 udf.idx1 = idx1_vec
 udf.idx2 = idx2_vec
 select!(udf, "idx1", "idx2", :)
-CSV.write("data/initial_conditions/approxQPO.csv", paramsdf, delim=' ',writeheader=false, append=false)
-CSV.write("data/initial_conditions/approxQPO.csv", udf, writeheader=false, delim=' ',append=true)
+# (udf is only plotted: its points are at the start of the halo orbit, not on the section q3 = 0,
+#  so it must not overwrite approxQPO.csv, which was written from uPdf above)
 
 ### Stuff from the kam_torus function
 
@@ -150,15 +155,15 @@ scatter( u_pmap_x, u_pmap_y,label="2D torus approx",legend=true,markercolor=:red
 
 
 
-T₀ = [γ⁻¹(x₀ + u[:,i]) for i in 1:N^2] # Initial guess for the invariant circle in the Hamiltonian coordinates
-CSV.write("data/initial_conditions/T₀.csv", DataFrame(T₀), writeheader=false)
+T₀ = [γ⁻¹(uP[i,:]) for i in 1:N^2]      # torus points on the section q3 = 0 (rows of uP) # Initial guess for the invariant circle in the Hamiltonian coordinates
+CSV.write("data/initial_conditions/T₀.csv", DataFrame(permutedims(reduce(hcat, T₀)), ["q1", "q2", "p1", "p2"]))  # one row per torus point
 
 plot_u = plot(u, xlabel="X [NON]",ylabel="Y [NON]", zlabel= "Z [NON]", legend=true,label="u",title="Approximate Invariant Circle",linecolor=:blue, marker=:x); # Plot the invariant circle
-scatter!(plot_u, [u[1][1]],[u[1][2]],[u[1][3]],label="u[1]",shape=:o,markercolor=:blue) # Plot an "x" on the first point of the invariant circle
+scatter!(plot_u, [u[1,1]],[u[1,2]],[u[1,3]],label="u[1]",shape=:o,markercolor=:blue) # Plot an "x" on the first point of the invariant circle
      
 
 
-z₀ = γ⁻¹(x₀)
+z₀ = γ⁻¹(P(x₀, μ)[1])   # the halo orbit on the section q3 = 0 (x₀ itself is at apolune, off the section)
 
 
 # Plot the halo orbit
