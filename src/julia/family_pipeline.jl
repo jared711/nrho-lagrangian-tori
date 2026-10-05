@@ -3,7 +3,9 @@
 # a regular orbit-fitted start torus, and the continuation direction.
 #
 # Usage:
-#   julia --project=. src/julia/family_pipeline.jl <Id> <outdir>
+#   julia --project=. src/julia/family_pipeline.jl <Id> <outdir> [c1 c2]
+# Optional (c1, c2): relative amplitudes of the two elliptic modes in the start torus (default 1 1);
+# the regular region of some members extends much farther in one mode (see stability_edge.jl).
 # Writes <outdir>/start.csv (param input, 32x32), <outdir>/setup.txt (rho, rho_lin, domega and
 # the param commands for the two branches) and results/families/nrho_id<Id>/nrho_fixed_point.txt.
 # The amplitudes tried for the start torus are 4e-5, 2e-5 and 1e-5 LU along both elliptic
@@ -18,6 +20,7 @@ include(joinpath(@__DIR__, "pmap_tools.jl"))
 
 function main(args)
     id, outdir = parse(Int, args[1]), args[2]
+    c1, c2 = length(args) >= 4 ? (parse(Float64, args[3]), parse(Float64, args[4])) : (1.0, 1.0)
     mkpath(outdir)
     root = joinpath(@__DIR__, "..", "..")
     df = CSV.read(joinpath(root, "data", "initial_conditions", "NRHO_L2.csv"), DataFrame, normalizenames=true)
@@ -42,7 +45,7 @@ function main(args)
     # regular orbit-fitted start torus
     chosen = nothing
     for a in (4e-5, 2e-5, 1e-5)
-        pts, _ = run_orbit(base, z + a * real(V[:, 1]) + a * real(V[:, 2]), 8192)
+        pts, _ = run_orbit(base, z + a * c1 * real(V[:, 1]) + a * c2 * real(V[:, 2]), 8192)
         size(pts, 1) < 8192 && continue
         r = refined_rotation_numbers(pts, z, V)
         drift = maximum(abs.(refined_rotation_numbers(pts[1:4096, :], z, V) - refined_rotation_numbers(pts[4097:end, :], z, V)))
@@ -58,8 +61,8 @@ function main(args)
     write_input(joinpath(outdir, "start.csv"), chosen.rho, chosen.K, H, mu)
     open(joinpath(outdir, "setup.txt"), "w") do f
         @printf(f, "Id %d  H = %.15g  mu = %.15g  T = %.15g\n", id, H, mu, T)
-        @printf(f, "rho_lin = %.17g %.17g\nrho = %.17g %.17g\ndomega = %.6e %.6e\namplitude = %.0e\n",
-                rho_lin..., chosen.rho..., domega..., chosen.a)
+        @printf(f, "rho_lin = %.17g %.17g\nrho = %.17g %.17g\ndomega = %.6e %.6e\namplitude = %.0e  mode weights = (%.2f, %.2f)\n",
+                rho_lin..., chosen.rho..., domega..., chosen.a, c1, c2)
         @printf(f, "inward:  param start.csv --domega %.6e %.6e --eps-max -0.95 --max-steps 3000 --tol-floor 1e-11  (step -0.01)\n", domega...)
         @printf(f, "outward: param start.csv --domega %.6e %.6e --eps-max 100 --max-steps 3000 --tol-floor 1e-11  (step +0.01)\n", domega...)
     end
