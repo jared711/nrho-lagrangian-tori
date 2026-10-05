@@ -73,6 +73,7 @@ Changes to JB-2024 code inside `param.cc` (all AI-2026-10):
 | `family_pipeline.jl` (set-up of a family for any elliptic NRHO member) | AI-2026-10 | |
 | `restart_from.jl` (output torus → input file, to extend a branch) | AI-2026-10 | |
 | `stability_edge.jl` (size of the regular region around an NRHO) | AI-2026-10 | |
+| `breakdown_analysis.jl` (limits of the families: regular extent, drift across the edge, Fourier content) | AI-2026-10 | |
 | `pmap_tools.jl` (fixed points, NAFF frequency analysis, torus fitting, frequency map, dense collocation Newton) | AI-2026-10 | |
 
 ## Data (`data/`)
