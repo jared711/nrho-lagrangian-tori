@@ -85,8 +85,21 @@ them are nearly stable. In the Saturn--Enceladus system the corresponding NRHOs 
 orbits (about $11.6$~h for NRHO Id~97 below) with a close passage over Enceladus, a few to a few
 tens of kilometres above its surface.
 
+Quasi-periodic orbits (QPOs) around Saturn--Enceladus halo orbits have been computed before. In earlier
+work \cite{blanchard2023qpo,blanchard2024thesis} we computed a family of QPOs around an $L_2$
+halo orbit just beyond the NRHO range (perilune altitude $88$~km, stability index $3.71$), as
+invariant circles of the stroboscopic map with a shooting method in the style of
+\cite{olikara2016computation}, to spread the perilune passes of an orbiter over the south polar
+region; none of those QPOs reached the surface. Since that halo orbit has only one pair of
+elliptic directions, its QPOs lie on two-dimensional tori. Invariant funnels were used to target
+NRHO perilunes from resonant orbits \cite{blanchard2023funnels} and to change the phase on a QPO
+at about $20$~m/s per revolution \cite{blanchard2024thesis}. Several NRHOs closer to Enceladus
+are elliptic in both directions, and around them the QPOs fill three-dimensional (Lagrangian) tori
+of the flow that form a two-parameter family. Exploring these tori was left as future work in
+\cite{blanchard2024thesis}; they are the subject of this paper.
+
 Around a linearly stable periodic orbit, KAM theory predicts a Cantor family of invariant tori
-carrying quasi-periodic orbits (QPOs) \cite{kolmogorov1954,arnold1963proof,moser1962}. QPOs
+carrying quasi-periodic orbits \cite{kolmogorov1954,arnold1963proof,moser1962}. QPOs
 enlarge the design space around a baseline periodic orbit, and they have been computed in
 astrodynamics and dynamical systems by several methods: semi-analytic normal-form and
 Fourier-based approaches \cite{jorba1999normal,gomezmondelo2001,jorba2001numerical},
@@ -135,8 +148,9 @@ with three frequencies (two frequencies and the return time). The contributions 
   Fourier modes the tori need. Tori whose quasi-periodic orbits intersect the surface are kept and
   marked, since the point-mass model does not see Enceladus.
 \end{itemize}
-\todo{Check whether QPOs around Saturn--Enceladus NRHOs have been computed before, and adjust
-the wording of the contribution list accordingly.}
+\todo{Search for other QPO work around Saturn--Enceladus NRHOs since 2023 (beyond
+\cite{blanchard2023qpo,blanchard2024thesis}); fill in the AAS paper numbers of
+\cite{blanchard2023qpo,blanchard2023funnels}.}
 
 %% ============================================================================
 \section{Model}\label{sec:model}
@@ -156,8 +170,10 @@ Saturn--Enceladus we use
 (the length unit is the Saturn--Enceladus distance). The equations of motion and their
 first variational equations are integrated with a Runge--Kutta--Fehlberg 7(8) method
 \cite{fehlberg1968rk78} with local tolerance $4\times10^{-14}$.
-\todo{Confirm that rk78vp.c is the Fehlberg 7(8) pair, and give the source of
-\nolinkurl{data/initial_conditions/NRHO_L2.csv} (\nolinkurl{docs/PROVENANCE.md} lists it as open).}
+The initial conditions of the NRHOs are taken from the JPL database of three-body periodic
+orbits,\footnote{\url{https://ssd.jpl.nasa.gov/tools/periodic_orbits.html}} as in
+\cite{blanchard2024thesis}.
+\todo{Confirm that rk78vp.c is the Fehlberg 7(8) pair.}
 
 \subsection{Poincar\'e section at fixed energy}
 We fix the energy $H=h$ and take the section $\Sigma = \{q_3 = 0,\ p_3>0,\ H=h\}$. On $\Sigma$ we
@@ -179,7 +195,8 @@ $f$ the vector field and $g(x)=q_3$ the section function. The differential of th
 DP = \Phi + f(x_\tau)\, D\tau^{\!\top}, \qquad
 D\tau^{\!\top} = -\frac{\nabla g^{\top}\Phi}{\nabla g\cdot f(x_\tau)},
 \end{equation}
-\cite[Sec.~7, eqs.~(40) and (42), pp.~17--18]{wilczak2007lohner}, and
+\cite[Sec.~7, eqs.~(40) and (42), pp.~17--18]{wilczak2007lohner} (derived for CR3BP sections in
+\cite[App.~E.3]{blanchard2024thesis}), and
 $DF(z) = \pi\, DP\, D\nu(z)$, where $D\nu$ contains the gradient of $p_3$ from \eqref{eq:p3}
 (by the chain rule, $\nabla p_3 = \nabla(p_3^2)/(2p_3)$). The return to the section is refined by
 Newton's method on $q_3$ to a tolerance of $10^{-14}$.
