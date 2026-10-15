@@ -142,7 +142,7 @@ ENCELADUS.m*ThreeBodyProblem.G, SATURN.m*ThreeBodyProblem.G, SATURN.m/(ENCELADUS
 ENCELADUS.m*ThreeBodyProblem.G, SATURN.m*ThreeBodyProblem.G, SATURN.m/(ENCELADUS.m+SATURN.m), ENCELADUS.R, ENCELADUS.R,
 ENCELADUS.m+SATURN.m, ENCELADUS.a, ENCELADUS.T/2π, ENCELADUS.a/(ENCELADUS.T/2π), ENCELADUS.a/(ENCELADUS.T/2π)^2, string(ENCELADUS.name,"/",SATURN.name))
 
-plot_haloWithTorus = plot(halo,vars=(1,2),label="Halo Orbit",legend=false,xaxis="x",yaxis="y",zaxis="z",color=:blue) # plot the halo orbit in the x-y plane
+plot_haloWithTorus = plot(halo,idxs=(1,2),label="Halo Orbit",legend=false,xaxis="x",yaxis="y",zaxis="z",color=:blue) # plot the halo orbit in the x-y plane
 plot!(plot_haloWithTorus,sys_Barcelona,sec=false,Lpts=false, lims=:auto)
 scatter!(plot_haloWithTorus,udf.q₁, udf.q₂, xlabel="q₁", ylabel="q₂", label="2D torus approx", legend=true, title="Invariant Circle in Hamiltonian Coordinates", markercolor=:red, marker=:x)
 plot!(plot_haloWithTorus,[x[1]],[x[2]],label="x₀",shape=:o,markercolor=:blue,legend=true,line=false) # Plot the initial condition
