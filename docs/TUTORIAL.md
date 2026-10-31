@@ -5,8 +5,8 @@ and its figures. The [README](../README.md) is the short command reference; this
 explains what each step does, what the output means, and what to do when something goes wrong.
 
 All commands run from the repository root unless a `cd` is shown. `REPO=$(pwd)` is the absolute
-path of the repository. Output shown below was produced with the code at commit `932e746` on a
-2-core Linux machine.
+path of the repository. Output shown below was produced with the code of 2026-10-31 (Julia 1.12.5)
+on a 2-core Linux machine. Every command shown with output was run as written.
 
 Contents
 
@@ -70,7 +70,8 @@ compiler.
   Homebrew `gcc` and build with `make CC=gcc-14 CXX=g++-14` (or the version you have).
 * Julia (tested with 1.12; `Manifest.toml` pins 1.12.5) for set-up and analysis. The first time:
   `julia --project=. -e 'using Pkg; Pkg.instantiate()'`. `ThreeBodyProblem.jl` is one of the
-  dependencies.
+  dependencies. The first install downloads ~3 GB and precompiles ~500 packages, which took about
+  40 minutes on 2 cores. PyCall uses the system `python3`. Later runs start in seconds.
 * pdflatex and bibtex for the paper.
 
 ### Build
@@ -329,6 +330,26 @@ There are two things to look at:
 julia --project=. src/julia/family_pipeline.jl 53 /tmp/fam53
 ```
 
+```
+  fixed-point it 0 |P(z)-z| = 1.368e-12
+  fixed-point it 1 |P(z)-z| = 3.011e-14
+Id 53  a = 4e-05: rho = (0.339383067, 0.152611379), drift 1.3e-10, fit residual 7.1e-11
+Id 53  H = -1.50001738952906  mu = 1.9011097358926e-07  T = 2.25162630811417
+rho_lin = 0.33909577956939074 0.15218347046745709
+rho = 0.33938306689995645 0.1526113794419775
+domega = 2.872873e-04 4.279090e-04
+amplitude = 4e-05  mode weights = (1.00, 1.00)
+inward:  param start.csv --domega 2.872873e-04 4.279090e-04 --eps-max -0.95 --max-steps 3000 --tol-floor 1e-11  (step -0.01)
+outward: param start.csv --domega 2.872873e-04 4.279090e-04 --eps-max 100 --max-steps 3000 --tol-floor 1e-11  (step +0.01)
+```
+
+This takes under a minute. It reproduces the saved Id 53 set-up: fixed point to ~1e-14, ρ_lin to
+~4e-13, ρ to ~4e-10 (the NAFF accuracy), and Δω to every printed digit. The new start torus has an
+initial error of 1.6e-11 LU and converges in one Newton step to 7.8e-13 LU. Note that the script
+**overwrites** `results/families/nrho_id<Id>/nrho_fixed_point.txt`. For a member that already has
+a saved family, either restore it (`git checkout -- results/families/nrho_id53/nrho_fixed_point.txt`)
+or expect a round-off-level diff.
+
 What it does (all via `bin/param --orbit` and `--eval`, driven from `src/julia/pmap_tools.jl`):
 
 1. Reads row Id of `NRHO_L2.csv` and converts it to Barcelona coordinates. H = −C/2.
@@ -471,7 +492,16 @@ NRHO_ID=53 RHO_LINEAR=0.33909577956895687,0.1521834704601715 \
   error_LU`, and figures `<prefix>_*.png`: rotation numbers, radius vs ρ₂, error vs ρ₂, and
   section views of selected tori.
 * It prints a per-branch summary: number of tori, ρ₂ range, radius range, and median and maximum
-  error.
+  error. For the command above (20 s):
+
+  ```
+  inward      68 tori, rho2 in [0.152212, 0.152611], radius 1.35..5.68 km, error median 4.51e-13 max 9.87e-12
+  outward     46 tori, rho2 in [0.152611, 0.154103], radius 5.68..14.74 km, error median 1.86e-12 max 9.92e-12
+  ```
+
+  The table it writes is identical to `figures/family_id53/id53_table.csv`. Its 114 rows include
+  5 duplicates: the start torus of each restarted piece is the last torus of the previous one, and
+  ε = 0 belongs to both branches. That leaves the 109 distinct tori quoted in the paper.
 * **Radius** is the maximum distance of the grid points from the torus centre in the (q₁, q₂)
   plane of the section, converted to km. This is the "radius on the section" quoted in the paper.
 
@@ -479,10 +509,19 @@ NRHO_ID=53 RHO_LINEAR=0.33909577956895687,0.1521834704601715 \
 
 ```bash
 NRHO_ID=53 julia --project=. src/julia/qpo_visualization.jl figures/qpo3d/id53 30 \
-  $B/inward_3/output_torus-0.071xxx.gz $B/outward_1/output_torus1.2xxxxx.gz $B/outward_3/output_torus0.21xxxx.gz
+  $B/inward_3/output_torus-0.005000.gz $B/outward_1/output_torus1.118647.gz $B/outward_3/output_torus0.215288.gz
 ```
 
-Pick the actual filenames with `ls`. For each torus, the script lifts grid points to the full
+```
+output_torus-0.005000.gz: section radius 1.93 km, distance to NRHO 0.06 .. 1.94 km, minimum altitude +15.96 km over 30 revolutions
+output_torus1.118647.gz: section radius 8.87 km, distance to NRHO 0.04 .. 8.11 km, minimum altitude +12.05 km over 30 revolutions
+output_torus0.215288.gz: section radius 14.74 km, distance to NRHO 0.06 .. 13.16 km, minimum altitude +8.93 km over 30 revolutions
+```
+
+This takes about 3 minutes on 2 cores (with `NCROSS=50`; the default of 300 apolune crossings
+takes longer). The last line is the paper's "at least 8.9 km above the surface" for the largest
+torus of the original family. On a headless machine set `GKSwstype=100` so the plotting backend
+does not look for a display. For each torus, the script lifts grid points to the full
 6-D state (p₃ from H), integrates the CR3BP for `<nrevs>` NRHO periods, and converts to
 Enceladus-centred km in the standard rotating frame. It then:
 
