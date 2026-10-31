@@ -98,26 +98,31 @@ are elliptic in both directions, and around them the QPOs fill three-dimensional
 of the flow that form a two-parameter family. Exploring these tori was left as future work in
 \cite{blanchard2024thesis}; they are the subject of this paper.
 
-Around a linearly stable periodic orbit, KAM theory predicts a Cantor family of invariant tori
-carrying quasi-periodic orbits \cite{kolmogorov1954,arnold1963proof,moser1962}. QPOs
+Around a linearly stable periodic orbit that satisfies twist (non-degeneracy) and non-resonance
+conditions, KAM theory predicts a Cantor family of invariant tori carrying quasi-periodic orbits
+\cite{kolmogorov1954,arnold1963proof,moser1962}. QPOs
 enlarge the design space around a baseline periodic orbit, and they have been computed in
 astrodynamics and dynamical systems by several methods: semi-analytic normal-form and
 Fourier-based approaches \cite{jorba1999normal,gomezmondelo2001,jorba2001numerical},
 collocation-type methods for invariant circles of stroboscopic or Poincar\'e maps
 \cite{olikara2016computation,baresi2018qpo,mccarthy2021qpo}, and pseudo-arclength continuation of
-tori \cite{schilder2005continuation}. The parameterization method
+tori \cite{schilder2005continuation}. The Newton-based methods among these solve, at each step, a
+dense linear system whose size grows with the number $N$ of discretization points, at a cost of
+$O(N^3)$ operations, and they do not use the symplectic structure of the problem. The
+parameterization method
 \cite{gonzalez2005kam,haro2006parameterization,haro2016book} takes a different route: it solves
 the invariance equation of the torus by a Newton-like method that exploits the geometry of the
 problem (symplecticity and the Lagrangian character of the torus). In the KAM setting the
 resulting quasi-Newton step reduces to cohomological equations with constant coefficients, which
-are solved diagonally in Fourier space
+are solved diagonally in Fourier space at a cost of $O(N\log N)$ operations
 \cite{haroluque2016ch4,figueras2017rigorous}. The method has an a-posteriori theory behind it: an
 approximately invariant torus that satisfies explicit non-degeneracy and non-resonance conditions
 is close to a true invariant torus \cite{gonzalez2005kam,figueras2017rigorous}. It has been
-adapted to flows and to partially hyperbolic tori
-\cite{haromondelo2021flow,haroluque2019partially,fernandezmora2024siads,fernandezmora2026convergence},
-and to whiskered tori in periodically perturbed restricted three-body problems
-\cite{kumar2022whiskered}.
+adapted to flows and to quasi-periodically forced Hamiltonian systems
+\cite{haromondelo2021flow,fernandezmora2024siads}, to partially integrable systems
+\cite{haroluque2019partially}, and to whiskered (partially hyperbolic) tori
+\cite{fernandezmora2026convergence}, including those of periodically perturbed planar circular
+restricted three-body problems \cite{kumar2022whiskered}.
 
 This paper applies the parameterization method of Haro and Luque
 \cite{haroluque2016ch4,figueras2017rigorous} to Lagrangian invariant tori around NRHOs of the
@@ -173,7 +178,6 @@ first variational equations are integrated with a Runge--Kutta--Fehlberg 7(8) me
 The initial conditions of the NRHOs are taken from the JPL database of three-body periodic
 orbits,\footnote{\url{https://ssd.jpl.nasa.gov/tools/periodic_orbits.html}} as in
 \cite{blanchard2024thesis}.
-\todo{Confirm that rk78vp.c is the Fehlberg 7(8) pair.}
 
 \subsection{Poincar\'e section at fixed energy}
 We fix the energy $H=h$ and take the section $\Sigma = \{q_3 = 0,\ p_3>0,\ H=h\}$. On $\Sigma$ we

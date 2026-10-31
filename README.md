@@ -5,6 +5,8 @@ Saturn–Enceladus circular restricted three-body problem, as Lagrangian invaria
 Poincaré map on q3 = 0 at fixed energy, with the parameterization method of Haro and Luque.
 
 **Current status: [`docs/STATUS_2026-10-05.md`](docs/STATUS_2026-10-05.md).**
+New to the code? Start with the step-by-step [tutorial](docs/TUTORIAL.md). Background on the
+mathematics behind the paper: [`docs/paper/SUPPORT.md`](docs/paper/SUPPORT.md).
 Who wrote what (Barcelona code, Jared Blanchard's code, AI-assisted changes):
 [`docs/PROVENANCE.md`](docs/PROVENANCE.md). History: [`docs/hist/`](docs/hist/README.md).
 

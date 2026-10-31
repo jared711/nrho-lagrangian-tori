@@ -859,7 +859,7 @@ int main(int argc, char *argv[])
             file_torus.open(name, ios::out);
             file_torus << scientific;
             file_torus.precision(15);
-            file_torus << toltail << endl;
+            file_torus << toltail_phys << endl; // physical units, as in the input file (toltail is rescaled to local coordinates)
             file_torus << tolinva << endl;
             file_torus << tolinte << endl;
             for (int j = 0; j < DTOR; j++)
