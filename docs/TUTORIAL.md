@@ -175,9 +175,10 @@ information as an input file, laid out differently:
 * 0-based indices;
 * field 11 holds the step size the continuation would use next.
 
-**Caveat:** field 1 of an output file is the tail tolerance after it has been rescaled to the
-solver's local coordinates (for example 8.4e-08), not the 1e-11 LU you started with. Reset it
-when you turn an output file into a new start file (see §7.3).
+**Older files:** output files written before the fix of 2026-10-31 store in field 1 the tail
+tolerance rescaled to the solver's local coordinates (for example 8.4e-08), not the 1e-11 LU of
+the input. This includes every `output_torus*.gz` in `results/families/`. Current builds write
+the physical value. Reset field 1 when you restart from an older file (see §7.3).
 
 ### Other files
 
@@ -405,14 +406,17 @@ run is **relative to this torus**. Keep track of the cumulative ε yourself; see
 `results/families/nrho_id53/README.md`. The ω of the restarted torus is its current ω, and Δω
 stays the same.
 
-**Reset the tail tolerance.** As noted in §3, `restart_from.jl` copies field 1 unchanged, so the
-new start file carries the rescaled tail tolerance (~1e-7) instead of 1e-11. Fix it:
+**Restarting from an older file: reset the tail tolerance.** `restart_from.jl` copies field 1
+unchanged. Files written by current builds hold the physical 1e-11, so nothing needs doing. Files
+written before the fix (including all of `results/families/`) hold the rescaled value (~1e-7).
+For those, fix it:
 
 ```bash
 awk 'NR==1{$1="1e-11"} {print}' start.csv > tmp && mv tmp start.csv
 ```
 
-**Without Julia**, this awk command does the whole conversion, including the reset:
+**Without Julia**, this awk command does the whole conversion, including the reset (harmless for
+new files):
 
 ```bash
 awk -v step=0.01 'NR<=12{h[NR]=$1; if(NR==12){h[1]="1e-11"; h[6]="0.0"; h[11]=step;
@@ -572,8 +576,8 @@ ever be accepted.
 refinement rule (see `results/families/nrho_id53/README.md`, `inward_1`). The current code only
 refines on a stall within 100× of the floor. Restart from a resampled 32×32 torus if needed.
 
-**Restarted run behaves differently from the original.** Check field 1 of the new start file
-(§7.3). Also remember that ε restarted at 0.
+**Restarted run behaves differently from the original.** If you restarted from a file written
+before 2026-10-31, check field 1 of the new start file (§7.3). Also remember that ε restarted at 0.
 
 **macOS: `clang: error: unsupported option '-fopenmp'`.** Build with Homebrew GCC (§2).
 
